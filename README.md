@@ -67,9 +67,11 @@
 
 ### 第四步：手动触发一次测试
 
-进入仓库 → **Actions → Weekly Journal Digest → Run workflow → Run workflow**
+进入仓库 → **Actions → Weekly Journal Digest → Run workflow**
 
-约 30 秒后检查邮箱（注意垃圾邮件文件夹）。收到邮件即部署成功。
+弹出面板中可勾选要运行的脚本（默认全选），点击 **Run workflow** 触发。约 30 秒后检查邮箱（注意垃圾邮件文件夹）。收到邮件即部署成功。
+
+> 手动触发时也可只勾选某个脚本单独运行，方便调试或补发。
 
 ---
 

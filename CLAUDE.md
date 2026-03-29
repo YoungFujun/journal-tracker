@@ -19,7 +19,7 @@ journal-tracker/
 ├── requirements.txt
 ├── NOTES.md                   # 本地进度文档（不同步 GitHub）
 ├── .github/workflows/
-│   └── weekly_digest.yml      # GitHub Actions 定时任务（四个脚本顺序运行）
+│   └── weekly_digest.yml      # GitHub Actions 定时任务（四个脚本顺序运行；手动触发时可按需选择）
 └── CLAUDE.md                  # 本文件
 ```
 
