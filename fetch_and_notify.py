@@ -7,25 +7,23 @@ import os
 import json
 import smtplib
 import feedparser
+import urllib.request
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
-# ── 期刊列表 ────────────────────────────────────────────────────────────────
+# ── RSS期刊列表 ──────────────────────────────────────────────────────────────
 JOURNALS = [
-    ("American Economic Review",               "https://www.aeaweb.org/journals/aer/rss"),
     ("The Quarterly Journal of Economics",     "https://academic.oup.com/rss/site_5504/3365.xml"),
     ("Journal of Political Economy",           "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"),
     ("The Review of Economic Studies",         "https://academic.oup.com/rss/site_5508/3369.xml"),
-    ("The Review of Economics and Statistics", "https://direct.mit.edu/rest/rss"),
     ("Econometrica",                           "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
-    ("Journal of Economic Literature",         "https://www.aeaweb.org/journals/jel/rss"),
     ("Journal of Labor Economics",             "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jole"),
     ("Journal of Development Economics",       "https://rss.sciencedirect.com/publication/science/03043878"),
     ("Journal of Public Economics",            "https://rss.sciencedirect.com/publication/science/00472727"),
     ("The Economic Journal",                   "https://onlinelibrary.wiley.com/feed/14680297/most-recent"),
-    ("China Economic Review",                  "https://rss.sciencedirect.com/publication/science/10430121"),
+    ("China Economic Review",                  "https://rss.sciencedirect.com/publication/science/1043951X"),
     ("Journal of Financial Economics",         "https://rss.sciencedirect.com/publication/science/0304405X"),
     ("The Journal of Finance",                 "https://onlinelibrary.wiley.com/feed/15406261/most-recent"),
     ("Review of Financial Studies",            "https://academic.oup.com/rss/site_5510/3371.xml"),
@@ -33,6 +31,13 @@ JOURNALS = [
     ("Journal of Health Economics",            "https://rss.sciencedirect.com/publication/science/01676296"),
     ("Health Economics",                       "https://onlinelibrary.wiley.com/feed/10991050/most-recent"),
     ("Social Science & Medicine",              "https://rss.sciencedirect.com/publication/science/02779536"),
+]
+
+# ── CrossRef期刊列表（无RSS的期刊，通过CrossRef API获取）────────────────────
+CROSSREF_JOURNALS = [
+    ("American Economic Review",               "0002-8282"),
+    ("Journal of Economic Literature",         "0022-3808"),
+    ("The Review of Economics and Statistics", "0034-6535"),
 ]
 
 # ── 配置（从环境变量/GitHub Secrets读取）────────────────────────────────────
@@ -93,6 +98,62 @@ def fetch_new_articles(seen: set) -> dict:
                 print(f"  {name}: no new articles")
         except Exception as e:
             print(f"  {name}: ERROR - {e}")
+    return results
+
+
+def fetch_crossref_articles(seen: set) -> dict:
+    """通过CrossRef API获取无RSS期刊的最新文章（最近90天内发表的）"""
+    results = {}
+    cutoff_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # 取90天前日期作为下限
+    from datetime import timedelta
+    from_date = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    for name, issn in CROSSREF_JOURNALS:
+        try:
+            url = (f"https://api.crossref.org/journals/{issn}/works"
+                   f"?sort=published&order=desc&rows=50"
+                   f"&filter=from-pub-date:{from_date}"
+                   f"&select=DOI,title,author,published,abstract,URL")
+            req = urllib.request.Request(url, headers={"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+            items = data.get("message", {}).get("items", [])
+            new_items = []
+            for item in items:
+                uid = item.get("DOI", "")
+                if not uid or uid in seen:
+                    continue
+                title = " ".join(item.get("title", ["(no title)"]))
+                link  = item.get("URL") or f"https://doi.org/{uid}"
+                authors = ", ".join(
+                    f"{a.get('given','')} {a.get('family','')}".strip()
+                    for a in item.get("author", [])[:5]
+                )
+                abstract = item.get("abstract", "")
+                if abstract:
+                    import re
+                    abstract = re.sub(r"<[^>]+>", "", abstract).strip()
+                    if len(abstract) > 300:
+                        abstract = abstract[:300] + "…"
+                pub_str = ""
+                pd = item.get("published", {}).get("date-parts", [[]])[0]
+                if pd:
+                    pub_str = "-".join(str(p).zfill(2) for p in pd)
+                new_items.append({
+                    "title":    title,
+                    "link":     link,
+                    "authors":  authors,
+                    "abstract": abstract,
+                    "date":     pub_str,
+                    "uid":      uid,
+                })
+            if new_items:
+                results[name] = new_items
+                print(f"  {name}: {len(new_items)} new (CrossRef)")
+            else:
+                print(f"  {name}: no new articles (CrossRef)")
+        except Exception as e:
+            print(f"  {name}: ERROR (CrossRef) - {e}")
     return results
 
 
@@ -157,6 +218,7 @@ def main():
     seen = load_seen()
     print(f"Previously seen: {len(seen)} articles")
     new_articles = fetch_new_articles(seen)
+    new_articles.update(fetch_crossref_articles(seen))
     total = sum(len(v) for v in new_articles.values())
     print(f"New articles found: {total}")
     if total == 0:
