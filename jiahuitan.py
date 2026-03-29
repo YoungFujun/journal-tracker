@@ -105,8 +105,6 @@ def fetch_rss(seen: set) -> tuple:
                 elif hasattr(entry, "author"):
                     authors = entry.author
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
-                if len(summary) > 300:
-                    summary = summary[:300] + "…"
                 new_items.append({
                     "title":    entry.get("title", "(no title)").strip(),
                     "link":     entry.get("link", ""),
@@ -156,8 +154,6 @@ def fetch_crossref(seen: set) -> tuple:
                     for a in item.get("author", [])[:5]
                 )
                 abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
-                if len(abstract) > 300:
-                    abstract = abstract[:300] + "…"
                 pd = item.get("published", {}).get("date-parts", [[]])[0]
                 pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
                 new_items.append({
