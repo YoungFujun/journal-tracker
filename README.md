@@ -17,10 +17,10 @@
 | 领域 | 期刊 |
 |------|------|
 | 综合经济学 | The Quarterly Journal of Economics · Journal of Political Economy · The Review of Economic Studies · Econometrica · American Economic Review |
-| 劳动/发展/公共 | Journal of Labor Economics · Journal of Development Economics · Journal of Public Economics · The Economic Journal · The Review of Economics and Statistics |
+| 劳动/发展/公共 | Journal of Labor Economics · Labour Economics · Journal of Development Economics · Journal of Public Economics · The Economic Journal · Journal of Population Economics · The Review of Economics and Statistics |
 | 中国经济 | China Economic Review |
 | 金融 | Journal of Financial Economics · The Journal of Finance · Review of Financial Studies |
-| 卫生/社会 | Journal of Health Economics · Health Economics · Social Science & Medicine |
+| 政治学/多学科/经济史 | American Journal of Political Science · Proceedings of the National Academy of Sciences · The Journal of Economic History |
 
 ---
 
@@ -31,6 +31,7 @@
 | `journal_tracker.py` | **主程序**，覆盖经济/金融/卫生经济学全部期刊 | 19 |
 | `yifanxu.py` | 个性化子程序（为朋友定制），聚焦经济学核心期刊 | 8 |
 | `haihuang.py` | 个性化子程序（为朋友定制），覆盖经济/社会/政治/金融/经济史 | 26 |
+| `jiahuitan.py` | 个性化子程序（为朋友定制），覆盖经济/金融/卫生经济学全部期刊 | 19 |
 
 各脚本独立维护缓存文件，互不干扰，每周同时运行。子程序作为扩展示例，Fork 后可按需删除或仿照添加。
 
@@ -60,6 +61,7 @@
 | `EMAIL_RECIPIENT` | 主程序收件地址，多地址用英文逗号分隔 | 是 |
 | `EMAIL_RECIPIENT_YIFAN` | yifanxu 子程序收件地址 | 使用该子程序时 |
 | `EMAIL_RECIPIENT_HAIHUANG` | haihuang 子程序收件地址 | 使用该子程序时 |
+| `EMAIL_RECIPIENT_JIAHUITAN` | jiahuitan 子程序收件地址 | 使用该子程序时 |
 
 ### 第四步：手动触发一次测试
 

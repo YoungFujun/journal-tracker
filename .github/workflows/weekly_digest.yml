@@ -45,10 +45,17 @@ jobs:
           EMAIL_RECIPIENT_HAIHUANG: ${{ secrets.EMAIL_RECIPIENT_HAIHUANG }}
         run: python haihuang.py
 
+      - name: Run tracker (jiahuitan)
+        env:
+          EMAIL_SENDER:               ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:             ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT_JIAHUITAN:  ${{ secrets.EMAIL_RECIPIENT_JIAHUITAN }}
+        run: python jiahuitan.py
+
       - name: Commit updated seen_articles.json
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add seen_articles.json
+          git add seen_articles.json seen_yifanxu.json seen_haihuang.json seen_jiahuitan.json
           git diff --cached --quiet || git commit -m "chore: update seen articles [skip ci]"
           git push
