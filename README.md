@@ -16,10 +16,10 @@
 
 | 领域 | 期刊 |
 |------|------|
-| 综合经济学 | The Quarterly Journal of Economics · Journal of Political Economy · The Review of Economic Studies · Econometrica · American Economic Review · Journal of Economic Literature |
+| 综合经济学 | The Quarterly Journal of Economics · Journal of Political Economy · The Review of Economic Studies · Econometrica · American Economic Review |
 | 劳动/发展/公共 | Journal of Labor Economics · Journal of Development Economics · Journal of Public Economics · The Economic Journal · The Review of Economics and Statistics |
 | 中国经济 | China Economic Review |
-| 金融 | Journal of Financial Economics · The Journal of Finance · Review of Financial Studies · Review of Finance |
+| 金融 | Journal of Financial Economics · The Journal of Finance · Review of Financial Studies |
 | 卫生/社会 | Journal of Health Economics · Health Economics · Social Science & Medicine |
 
 ---

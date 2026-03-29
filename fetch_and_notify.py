@@ -27,7 +27,6 @@ JOURNALS = [
     ("Journal of Financial Economics",         "https://rss.sciencedirect.com/publication/science/0304405X"),
     ("The Journal of Finance",                 "https://onlinelibrary.wiley.com/feed/15406261/most-recent"),
     ("Review of Financial Studies",            "https://academic.oup.com/rss/site_5510/3371.xml"),
-    ("Review of Finance",                      "https://academic.oup.com/rss/site_5512/3373.xml"),
     ("Journal of Health Economics",            "https://rss.sciencedirect.com/publication/science/01676296"),
     ("Health Economics",                       "https://onlinelibrary.wiley.com/feed/10991050/most-recent"),
     ("Social Science & Medicine",              "https://rss.sciencedirect.com/publication/science/02779536"),
@@ -36,7 +35,6 @@ JOURNALS = [
 # ── CrossRef期刊列表（无RSS的期刊，通过CrossRef API获取）────────────────────
 CROSSREF_JOURNALS = [
     ("American Economic Review",               "0002-8282"),
-    ("Journal of Economic Literature",         "0022-3808"),
     ("The Review of Economics and Statistics", "0034-6535"),
 ]
 
