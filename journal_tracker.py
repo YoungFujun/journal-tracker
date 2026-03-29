@@ -83,6 +83,7 @@ def save_fail_counts(counts: dict):
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
 def fetch_new_articles(seen: set) -> tuple:
     results, errors = {}, {}
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     for name, url in JOURNALS:
         try:
             feed = feedparser.parse(url)
@@ -92,6 +93,9 @@ def fetch_new_articles(seen: set) -> tuple:
                 if uid and uid not in seen:
                     published = entry.get("published_parsed") or entry.get("updated_parsed")
                     pub_str = datetime(*published[:3]).strftime("%Y-%m-%d") if published else ""
+                    # 跳过 7 天前的文章
+                    if published and datetime(*published[:6]) < cutoff.replace(tzinfo=None):
+                        continue
                     authors = ""
                     if hasattr(entry, "authors"):
                         authors = ", ".join(a.get("name", "") for a in entry.authors)
@@ -123,7 +127,7 @@ def fetch_new_articles(seen: set) -> tuple:
 def fetch_crossref_articles(seen: set) -> tuple:
     """通过CrossRef API获取无RSS期刊的最新文章（最近90天内发表的）"""
     results, errors = {}, {}
-    from_date = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    from_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
     for name, issn in CROSSREF_JOURNALS:
         try:
             url = (f"https://api.crossref.org/journals/{issn}/works"

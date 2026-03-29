@@ -98,6 +98,7 @@ def save_fail_counts(counts: dict):
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
 def fetch_rss(seen: set) -> tuple:
     results, errors = {}, {}
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     for name, url in JOURNALS:
         try:
             feed = feedparser.parse(url)
@@ -108,6 +109,9 @@ def fetch_rss(seen: set) -> tuple:
                     continue
                 published = entry.get("published_parsed") or entry.get("updated_parsed")
                 pub_str = datetime(*published[:3]).strftime("%Y-%m-%d") if published else ""
+                # 跳过 7 天前的文章
+                if published and datetime(*published[:6]) < cutoff.replace(tzinfo=None):
+                    continue
                 authors = ""
                 if hasattr(entry, "authors"):
                     authors = ", ".join(a.get("name", "") for a in entry.authors)
@@ -138,7 +142,7 @@ def fetch_rss(seen: set) -> tuple:
 # ── 抓取 CrossRef ─────────────────────────────────────────────────────────────
 def fetch_crossref(seen: set) -> tuple:
     results, errors = {}, {}
-    from_date = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    from_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
     for name, issn in CROSSREF_JOURNALS:
         try:
             url = (
