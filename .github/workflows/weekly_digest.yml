@@ -5,6 +5,23 @@ on:
     # 每周一 UTC 01:00（北京/大阪时间 09:00）
     - cron: "0 1 * * 1"
   workflow_dispatch:
+    inputs:
+      run_main:
+        description: "Run journal_tracker.py (main)"
+        type: boolean
+        default: true
+      run_yifanxu:
+        description: "Run yifanxu.py"
+        type: boolean
+        default: true
+      run_haihuang:
+        description: "Run haihuang.py"
+        type: boolean
+        default: true
+      run_jiahuitan:
+        description: "Run jiahuitan.py"
+        type: boolean
+        default: true
 
 jobs:
   fetch-and-notify:
@@ -25,6 +42,7 @@ jobs:
         run: pip install feedparser
 
       - name: Run tracker (main)
+        if: github.event_name == 'schedule' || inputs.run_main == true
         env:
           EMAIL_SENDER:    ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:  ${{ secrets.EMAIL_PASSWORD }}
@@ -33,6 +51,7 @@ jobs:
         run: python journal_tracker.py
 
       - name: Run tracker (yifanxu)
+        if: github.event_name == 'schedule' || inputs.run_yifanxu == true
         env:
           EMAIL_SENDER:          ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:        ${{ secrets.EMAIL_PASSWORD }}
@@ -41,6 +60,7 @@ jobs:
         run: python yifanxu.py
 
       - name: Run tracker (haihuang)
+        if: github.event_name == 'schedule' || inputs.run_haihuang == true
         env:
           EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
@@ -49,6 +69,7 @@ jobs:
         run: python haihuang.py
 
       - name: Run tracker (jiahuitan)
+        if: github.event_name == 'schedule' || inputs.run_jiahuitan == true
         env:
           EMAIL_SENDER:              ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:            ${{ secrets.EMAIL_PASSWORD }}
