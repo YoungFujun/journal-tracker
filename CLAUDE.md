@@ -7,7 +7,7 @@ journal-tracker/
 ├── journal_tracker.py        # 【主程序】覆盖经济/金融/经济史 16 个期刊
 ├── yifanxu.py                # 【个性化子程序】为朋友定制，经济学核心 8 个期刊
 ├── haihuang.py               # 【个性化子程序】为朋友定制，经济/社会/政治/金融/史 26 个期刊
-├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/金融/卫生经济学 19 个期刊
+├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/金融/政治/经济史 19 个期刊
 ├── seen_articles.json              # 主程序缓存
 ├── seen_yifanxu.json               # yifanxu 缓存（首次运行后自动生成）
 ├── seen_haihuang.json              # haihuang 缓存（首次运行后自动生成）
@@ -27,8 +27,11 @@ journal-tracker/
 
 ### 每次修改后必须执行
 
-1. **记录进度**：将本次改动摘要追加到 `NOTES.md` 的「进度日志」章节（日期 + 改动要点）
-2. **推送 GitHub**：所有代码改动（`.py`、`.yml`、`README.md`）必须提交并推送至 GitHub main 分支；`NOTES.md` 不推送（已加入 `.gitignore`）
+1. **同步文字描述**：凡涉及期刊数量、领域、功能的改动，须同步更新以下位置的对应描述：
+   - 本文件（`CLAUDE.md`）的项目结构注释
+   - `README.md` 的功能介绍、已收录期刊表、脚本说明表
+2. **记录进度**：将本次改动摘要追加到 `NOTES.md` 的「进度日志」章节（日期 + 改动要点）
+3. **推送 GitHub**：所有代码改动（`.py`、`.yml`、`README.md`、`CLAUDE.md`）必须提交并推送至 GitHub main 分支；`NOTES.md` 不推送（已加入 `.gitignore`）
 
 ### 提交规范
 
