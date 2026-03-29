@@ -42,7 +42,7 @@ SMTP_HOST  = "smtp.163.com"
 SMTP_PORT  = 465
 SENDER     = os.environ["EMAIL_SENDER"]
 PASSWORD   = os.environ["EMAIL_PASSWORD"]
-RECIPIENT  = os.environ["EMAIL_RECIPIENT"]
+RECIPIENTS = [r.strip() for r in os.environ["EMAIL_RECIPIENT"].split(",")]
 
 
 def load_seen() -> set:
@@ -148,12 +148,12 @@ def send_email(html: str, week_str: str, total: int):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"[Journals] {total} new articles — {week_str}"
     msg["From"]    = SENDER
-    msg["To"]      = RECIPIENT
+    msg["To"]      = ", ".join(RECIPIENTS)
     msg.attach(MIMEText(html, "html", "utf-8"))
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
         server.login(SENDER, PASSWORD)
-        server.sendmail(SENDER, RECIPIENT, msg.as_string())
-    print(f"Email sent to {RECIPIENT}")
+        server.sendmail(SENDER, RECIPIENTS, msg.as_string())
+    print(f"Email sent to {', '.join(RECIPIENTS)}")
 
 
 def main():
