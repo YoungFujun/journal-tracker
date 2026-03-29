@@ -54,7 +54,9 @@ def save_seen(seen: set):
 
 def fetch_new_articles(seen: set) -> dict:
     import re
+    import time
     results = {}
+    cutoff = datetime.now(timezone.utc).timestamp() - 7 * 24 * 3600  # 过去7天
     for name, url in JOURNALS:
         try:
             feed = feedparser.parse(url)
@@ -62,6 +64,10 @@ def fetch_new_articles(seen: set) -> dict:
             for entry in feed.entries:
                 uid = entry.get("id") or entry.get("link", "")
                 if uid and uid not in seen:
+                    # 检查发布时间，过滤7天以外的文章
+                    published = entry.get("published_parsed") or entry.get("updated_parsed")
+                    if published and time.mktime(published) < cutoff:
+                        continue
                     authors = ""
                     if hasattr(entry, "authors"):
                         authors = ", ".join(a.get("name", "") for a in entry.authors)
