@@ -26,18 +26,15 @@ JOURNALS = [
     ("The Review of Economic Studies",         "https://academic.oup.com/rss/site_5508/3369.xml"),
     ("Econometrica",                           "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
     ("Journal of Labor Economics",             "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jole"),
-    ("Labour Economics",                       "https://rss.sciencedirect.com/publication/science/09275371"),
     ("Journal of Development Economics",       "https://rss.sciencedirect.com/publication/science/03043878"),
     ("Journal of Public Economics",            "https://rss.sciencedirect.com/publication/science/00472727"),
     ("The Economic Journal",                   "https://onlinelibrary.wiley.com/feed/14680297/most-recent"),
     ("Journal of Population Economics",        "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=148&channel-name=Journal+of+Population+Economics"),
     ("China Economic Review",                  "https://rss.sciencedirect.com/publication/science/1043951X"),
-    ("Journal of Financial Economics",         "https://rss.sciencedirect.com/publication/science/0304405X"),
-    ("The Journal of Finance",                 "https://onlinelibrary.wiley.com/feed/15406261/most-recent"),
-    ("Review of Financial Studies",            "https://academic.oup.com/rss/site_5510/3371.xml"),
-    ("American Journal of Political Science",  "https://onlinelibrary.wiley.com/action/showFeed?jc=15405907&type=etoc&feed=rss"),
-    ("Proceedings of the National Academy of Sciences","https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=PNAS"),
-    ("The Journal of Economic History",        "https://www.cambridge.org/core/rss/product/id/677F550CB2C69EFA1656654D487DE504"),
+    # 卫生经济学
+    ("Journal of Health Economics",            "https://rss.sciencedirect.com/publication/science/01676296"),
+    ("Health Economics",                       "https://onlinelibrary.wiley.com/feed/10991050/most-recent"),
+    ("Social Science & Medicine",              "https://rss.sciencedirect.com/publication/science/02779536"),
 ]
 
 # ── CrossRef 期刊（无 RSS）──────────────────────────────────────────────────

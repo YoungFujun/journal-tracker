@@ -7,7 +7,7 @@ journal-tracker/
 ├── journal_tracker.py        # 【主程序】覆盖经济/金融/经济史 16 个期刊
 ├── yifanxu.py                # 【个性化子程序】为朋友定制，经济学核心 8 个期刊
 ├── haihuang.py               # 【个性化子程序】为朋友定制，经济/社会/政治/金融/史 26 个期刊
-├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/金融/政治/经济史 19 个期刊
+├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/公共/卫生经济学 15 个期刊
 ├── seen_articles.json              # 主程序缓存
 ├── seen_yifanxu.json               # yifanxu 缓存（首次运行后自动生成）
 ├── seen_haihuang.json              # haihuang 缓存（首次运行后自动生成）
