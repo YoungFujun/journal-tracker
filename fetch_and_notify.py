@@ -59,7 +59,7 @@ def fetch_new_articles(seen: set) -> dict:
     import re
     import time
     results = {}
-    cutoff = datetime.now(timezone.utc).timestamp() - 7 * 24 * 3600  # 过去7天
+    cutoff = datetime.now(timezone.utc).timestamp() - 30 * 24 * 3600  # 过去30天（测试用）
     for name, url in JOURNALS:
         try:
             feed = feedparser.parse(url)
