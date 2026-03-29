@@ -24,6 +24,17 @@
 
 ---
 
+## 脚本说明
+
+| 文件 | 用途 |
+|------|------|
+| `journal_tracker.py` | 主追踪器，覆盖全部 19 个期刊 |
+| `yifanxu.py` | 子追踪器，追踪 AER · QJE · Econometrica · RES · JPE · JDE · JLE · JHR，发送至独立收件箱 |
+
+两个脚本独立维护各自的缓存文件（`seen_articles.json` / `seen_yifanxu.json`），互不干扰，每周同时运行。
+
+---
+
 ## 快速开始（Fork 后 5 分钟完成部署）
 
 ### 第一步：Fork 本仓库
@@ -45,7 +56,7 @@
 |---|---|
 | `EMAIL_SENDER` | 163 邮箱地址，如 `yourname@163.com` |
 | `EMAIL_PASSWORD` | 第二步获得的 SMTP 授权码 |
-| `EMAIL_RECIPIENT` | 收件地址，多个地址用英文逗号分隔，如 `a@gmail.com,b@ruc.edu.cn` |
+| `EMAIL_RECIPIENT` | 收件地址，多个地址用英文逗号分隔，如 `a@gmail.com,b@example.com` |
 
 ### 第四步：手动触发一次测试
 
@@ -57,7 +68,7 @@
 
 ## 自定义期刊列表
 
-打开 `fetch_and_notify.py`，找到 `JOURNALS` 列表：
+打开 `journal_tracker.py`，找到 `JOURNALS` 列表：
 
 ```python
 JOURNALS = [
@@ -74,7 +85,7 @@ JOURNALS = [
 - **Wiley**：`https://onlinelibrary.wiley.com/feed/{eISSN（去掉连字符）}/most-recent`
 - **Oxford (OUP)**：在期刊主页找 RSS 图标获取链接
 
-对于没有公开 RSS 的期刊（如 AER、JEL），本项目使用 [CrossRef API](https://api.crossref.org) 作为数据来源，在 `CROSSREF_JOURNALS` 列表中填写期刊名和 ISSN 即可：
+对于没有公开 RSS 的期刊（如 AER），本项目使用 [CrossRef API](https://api.crossref.org) 作为数据来源，在 `CROSSREF_JOURNALS` 列表中填写期刊名和 ISSN 即可：
 
 ```python
 CROSSREF_JOURNALS = [
@@ -100,9 +111,9 @@ CROSSREF_JOURNALS = [
 
 1. GitHub Actions 按计划触发脚本
 2. 脚本从各期刊 RSS/CrossRef 拉取文章列表
-3. 与 `seen_articles.json`（存储已发送文章的 ID）对比，筛出新文章
+3. 与缓存文件（`seen_articles.json`）对比，筛出新文章
 4. 将新文章整理成 HTML 邮件，通过 163 SMTP 发送
-5. 更新 `seen_articles.json` 并提交回仓库，确保下次运行不重复
+5. 更新缓存并提交回仓库，确保下次运行不重复
 
 ---
 
@@ -115,4 +126,4 @@ CROSSREF_JOURNALS = [
 在 Actions 日志中查看该期刊是否显示 `ERROR`。若是，表明 RSS 地址已失效，需更新 URL。
 
 **Q：如何只保留自己关注的期刊？**
-直接编辑 `fetch_and_notify.py`，删除不需要的行后提交即可。
+直接编辑 `journal_tracker.py`，删除不需要的行后提交即可。
