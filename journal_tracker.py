@@ -23,7 +23,6 @@ JOURNALS = [
     ("Econometrica",                                   "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
     # 劳动/发展/公共
     ("Journal of Labor Economics",                     "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jole"),
-    ("Labour Economics",                               "https://rss.sciencedirect.com/publication/science/09275371"),
     ("Journal of Development Economics",               "https://rss.sciencedirect.com/publication/science/03043878"),
     ("Journal of Public Economics",                    "https://rss.sciencedirect.com/publication/science/00472727"),
     ("The Economic Journal",                           "https://onlinelibrary.wiley.com/feed/14680297/most-recent"),
@@ -34,9 +33,7 @@ JOURNALS = [
     ("Journal of Financial Economics",                 "https://rss.sciencedirect.com/publication/science/0304405X"),
     ("The Journal of Finance",                         "https://onlinelibrary.wiley.com/feed/15406261/most-recent"),
     ("Review of Financial Studies",                    "https://academic.oup.com/rss/site_5510/3371.xml"),
-    # 政治学/多学科/经济史
-    ("American Journal of Political Science",          "https://onlinelibrary.wiley.com/action/showFeed?jc=15405907&type=etoc&feed=rss"),
-    ("Proceedings of the National Academy of Sciences","https://www.pnas.org/action/showFeed?type=etoc&feed=rss&jc=PNAS"),
+    # 经济史
     ("The Journal of Economic History",                "https://www.cambridge.org/core/rss/product/id/677F550CB2C69EFA1656654D487DE504"),
 ]
 

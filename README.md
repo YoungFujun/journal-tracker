@@ -1,13 +1,13 @@
 # Journal RSS Tracker
 
-每周自动追踪经济学、金融学、政治学、经济史等领域期刊的最新文章，通过邮件发送摘要。
+每周自动追踪经济学、金融学、经济史等领域期刊的最新文章，通过邮件发送摘要。
 完全运行在 GitHub Actions 上，**免费、无需服务器、无需本地运行**。
 
 ---
 
 ## 功能
 
-- 覆盖 19 个主流期刊（见下表），每周一北京时间 09:00 自动运行
+- 覆盖 16 个主流期刊（见下表），每周一北京时间 09:00 自动运行
 - 仅推送过去 7 天内发表、且上次运行后新出现的文章，不重复、不遗漏
 - 邮件包含：文章标题（可点击跳转）、作者、发布日期、摘要
 - 支持多收件人
@@ -18,10 +18,10 @@
 | 领域 | 期刊 |
 |------|------|
 | 综合经济学 | The Quarterly Journal of Economics · Journal of Political Economy · The Review of Economic Studies · Econometrica · American Economic Review |
-| 劳动/发展/公共 | Journal of Labor Economics · Labour Economics · Journal of Development Economics · Journal of Public Economics · The Economic Journal · Journal of Population Economics · The Review of Economics and Statistics |
+| 劳动/发展/公共 | Journal of Labor Economics · Journal of Development Economics · Journal of Public Economics · The Economic Journal · Journal of Population Economics · The Review of Economics and Statistics |
 | 中国经济 | China Economic Review |
 | 金融 | Journal of Financial Economics · The Journal of Finance · Review of Financial Studies |
-| 政治学/多学科/经济史 | American Journal of Political Science · Proceedings of the National Academy of Sciences · The Journal of Economic History |
+| 经济史 | The Journal of Economic History |
 
 ---
 
@@ -29,7 +29,7 @@
 
 | 文件 | 说明 | 期刊数 |
 |------|------|--------|
-| `journal_tracker.py` | **主程序**，覆盖经济/金融/政治/经济史等领域期刊 | 19 |
+| `journal_tracker.py` | **主程序**，覆盖经济/金融/经济史等领域期刊 | 16 |
 | `yifanxu.py` | 个性化子程序（为朋友定制），聚焦经济学核心期刊 | 8 |
 | `haihuang.py` | 个性化子程序（为朋友定制），覆盖经济/社会/政治/金融/经济史 | 26 |
 | `jiahuitan.py` | 个性化子程序（为朋友定制），覆盖经济/金融/政治/经济史等领域期刊 | 19 |

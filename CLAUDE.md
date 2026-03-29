@@ -4,7 +4,7 @@
 
 ```
 journal-tracker/
-├── journal_tracker.py        # 【主程序】覆盖经济/金融/政治/经济史 19 个期刊
+├── journal_tracker.py        # 【主程序】覆盖经济/金融/经济史 16 个期刊
 ├── yifanxu.py                # 【个性化子程序】为朋友定制，经济学核心 8 个期刊
 ├── haihuang.py               # 【个性化子程序】为朋友定制，经济/社会/政治/金融/史 26 个期刊
 ├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/金融/卫生经济学 19 个期刊
