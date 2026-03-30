@@ -14,7 +14,7 @@ import re
 import smtplib
 import feedparser
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -54,6 +54,7 @@ RECIPIENT        = os.environ["EMAIL_RECIPIENT_JIAHUITAN"]
 ALERT_RECIPIENT  = os.environ.get("EMAIL_ALERT", "")
 FAIL_THRESHOLD   = 5
 SCRIPT_NAME      = "jiahuitan"
+START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
 
 TEST_MODE = "--test" in sys.argv
 
@@ -287,9 +288,10 @@ def send_alert(triggered: dict):
 
 # ── 主流程 ────────────────────────────────────────────────────────────────────
 def main():
-    week_str = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
+    week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
+    issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
     mode_label = "【测试模式·全量】" if TEST_MODE else "【增量模式】"
-    print(f"=== jiahuitan tracker · {week_str} · {mode_label} ===")
+    print(f"=== jiahuitan tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
 
     seen        = set() if TEST_MODE else load_seen()
     fail_counts = load_fail_counts()
@@ -325,11 +327,11 @@ def main():
     html = build_html(articles, week_str)
 
     if TEST_MODE:
-        subject = f"测试 · Journal Weekly Digest · {total} articles — {week_str}"
+        subject = f"测试 · 第{issue_num}期 · Journal Weekly Digest · {total} articles — {week_str}"
         send_email(html, subject)
         print("测试完成，缓存未更新（下次正式运行仍可获取全量内容）。")
     else:
-        subject = f"Journal Weekly Digest · {total} new articles — {week_str}"
+        subject = f"第{issue_num}期 · Journal Weekly Digest · {total} new articles — {week_str}"
         for items in articles.values():
             for a in items:
                 seen.add(a["uid"])

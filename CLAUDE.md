@@ -52,7 +52,7 @@ journal-tracker/
 
 - 四个脚本**独立维护，不共享代码**，保持各自完整可运行
 - 主程序（`journal_tracker.py`）覆盖核心期刊；子程序为朋友个性化定制，期刊范围可与主程序重叠
-- 邮件标题统一以 `Journal Weekly Digest` 开头；测试模式标题以 `测试 · Journal Weekly Digest` 开头
+- 邮件标题格式：`第N期 · Journal Weekly Digest · {total} new articles — {week_str}`；测试模式：`测试 · 第N期 · Journal Weekly Digest · ...`；期号由 `START_DATE = date(2026, 3, 30)` 与当前日期计算得出
 - 环境变量统一从 `os.environ` 读取，不硬编码敏感信息
 - 缓存文件名与脚本对应（`seen_<scriptname>.json`、`fail_counts_<scriptname>.json`），不交叉引用
 - 新增子程序时，参照现有子程序结构，并在 `weekly_digest.yml` 追加对应 step（含 `EMAIL_ALERT` 环境变量）
@@ -78,3 +78,13 @@ journal-tracker/
 2. **CrossRef API**（备选）：用于无公开 RSS 的期刊（如 AER），抓取近 7 天内发表文章
 
 新增期刊时，先查出版社网站是否提供 RSS；无 RSS 则用 CrossRef（需要 ISSN）。
+
+## 本地开发注意事项
+
+缓存文件（`seen_*.json`、`fail_counts_*.json`）必须保留在远端仓库供 GitHub Actions 使用，但本地无需同步。已对这些文件执行：
+
+```bash
+git update-index --skip-worktree seen_articles.json seen_yifanxu.json seen_haihuang.json seen_jiahuitan.json fail_counts_journal_tracker.json fail_counts_yifanxu.json fail_counts_haihuang.json fail_counts_jiahuitan.json
+```
+
+新克隆仓库后需重新执行上述命令，否则这些文件会出现在 `git status` 中。

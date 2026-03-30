@@ -9,7 +9,7 @@ import re
 import smtplib
 import feedparser
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -54,6 +54,7 @@ RECIPIENTS       = [r.strip() for r in os.environ["EMAIL_RECIPIENT"].split(",")]
 ALERT_RECIPIENT  = os.environ.get("EMAIL_ALERT", "")
 FAIL_THRESHOLD   = 5
 SCRIPT_NAME      = "journal_tracker"
+START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
 
 
 # ── 缓存读写 ──────────────────────────────────────────────────────────────────
@@ -206,9 +207,9 @@ def build_html(new_articles: dict, week_str: str) -> str:
 
 
 # ── 发送邮件 ──────────────────────────────────────────────────────────────────
-def send_email(html: str, week_str: str, total: int):
+def send_email(html: str, week_str: str, total: int, issue_num: int):
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Journal Weekly Digest · {total} new articles — {week_str}"
+    msg["Subject"] = f"第{issue_num}期 · Journal Weekly Digest · {total} new articles — {week_str}"
     msg["From"]    = SENDER
     msg["To"]      = ", ".join(RECIPIENTS)
     msg.attach(MIMEText(html, "html", "utf-8"))
@@ -280,8 +281,9 @@ def send_alert(triggered: dict):
 
 # ── 主流程 ────────────────────────────────────────────────────────────────────
 def main():
-    week_str = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
-    print(f"=== Journal Tracker · {week_str} ===")
+    week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
+    issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
+    print(f"=== Journal Tracker · {week_str} · 第{issue_num}期 ===")
     seen        = load_seen()
     fail_counts = load_fail_counts()
     print(f"Previously seen: {len(seen)} articles")
@@ -316,7 +318,7 @@ def main():
             seen.add(a["uid"])
     save_seen(seen)
     html = build_html(new_articles, week_str)
-    send_email(html, week_str, total)
+    send_email(html, week_str, total, issue_num)
     print("Done.")
 
 
