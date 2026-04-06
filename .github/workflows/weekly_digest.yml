@@ -1,9 +1,6 @@
 name: Weekly Journal Digest
 
 on:
-  schedule:
-    # 每周一 UTC 01:00（北京/大阪时间 09:00）
-    - cron: "0 1 * * 1"
   workflow_dispatch:
     inputs:
       run_main:
