@@ -169,6 +169,19 @@ def fetch_crossref_articles(seen: set) -> tuple:
 
 
 # ── OpenAlex 摘要补充 ─────────────────────────────────────────────────────────
+def _is_real_abstract(text: str) -> bool:
+    """判断文本是否为真实摘要，排除 RSS 元数据占位字符串。"""
+    if not text:
+        return False
+    if text.startswith("Publication date:"):   # ScienceDirect 元数据
+        return False
+    if len(text) < 100:                        # 过短，通常是卷期页码
+        return False
+    if re.search(r'\b(EarlyView|Ahead of Print)\b', text):  # Wiley/Chicago 占位
+        return False
+    return True
+
+
 def _extract_doi(url: str) -> str:
     """从 URL 中提取 DOI（格式：10.xxxx/...）。"""
     m = re.search(r'(10\.\d{4,}/[^\s&?#"<>]+)', url)
@@ -193,7 +206,7 @@ def enrich_abstracts(articles: dict):
     策略：先用 DOI 精确查询；无 DOI 或查不到摘要时改用标题搜索。
     """
     missing = [(j, i) for j, items in articles.items()
-               for i, a in enumerate(items) if not a["abstract"]]
+               for i, a in enumerate(items) if not _is_real_abstract(a["abstract"])]
     if not missing:
         print("  摘要补充：无需补充")
         return
@@ -203,6 +216,7 @@ def enrich_abstracts(articles: dict):
     enriched = 0
 
     for journal, idx in missing:
+        articles[journal][idx]["abstract"] = ""   # 清除假摘要，避免元数据残留
         a = articles[journal][idx]
         abstract = ""
 

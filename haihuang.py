@@ -189,6 +189,19 @@ def fetch_crossref(seen: set) -> tuple:
 
 
 # ── OpenAlex 摘要补充 ─────────────────────────────────────────────────────────
+def _is_real_abstract(text: str) -> bool:
+    """判断文本是否为真实摘要，排除 RSS 元数据占位字符串。"""
+    if not text:
+        return False
+    if text.startswith("Publication date:"):
+        return False
+    if len(text) < 100:
+        return False
+    if re.search(r'\b(EarlyView|Ahead of Print)\b', text):
+        return False
+    return True
+
+
 def _extract_doi(url: str) -> str:
     """从 URL 中提取 DOI（格式：10.xxxx/...）。"""
     m = re.search(r'(10\.\d{4,}/[^\s&?#"<>]+)', url)
@@ -223,6 +236,7 @@ def enrich_abstracts(articles: dict):
     enriched = 0
 
     for journal, idx in missing:
+        articles[journal][idx]["abstract"] = ""   # 清除假摘要，避免元数据残留
         a = articles[journal][idx]
         abstract = ""
 
