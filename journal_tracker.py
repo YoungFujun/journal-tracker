@@ -250,8 +250,11 @@ def build_html(new_articles: dict, week_str: str) -> str:
     total = sum(len(v) for v in new_articles.values())
     sections = ""
     for journal, items in new_articles.items():
+        with_abs    = [a for a in items if a.get("abstract")]
+        without_abs = [a for a in items if not a.get("abstract")]
         rows = ""
-        for a in items:
+
+        for a in with_abs:
             rows += f"""
             <tr>
               <td style="padding:10px 0; border-bottom:1px solid #eee; vertical-align:top;">
@@ -260,9 +263,32 @@ def build_html(new_articles: dict, week_str: str) -> str:
                 </div>
                 {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + a['date'] + "</div>" if a['date'] else ""}
                 {"<div style='font-size:12px; color:#666; margin-bottom:4px;'>" + a['authors'] + "</div>" if a['authors'] else ""}
-                {"<div style='font-size:12px; color:#444; line-height:1.5;'>" + a['abstract'] + "</div>" if a['abstract'] else ""}
+                <div style="background:#f1f5f9; border-radius:4px; padding:8px 12px; margin-top:4px;">
+                  <span style="font-size:11px; color:#64748b; font-weight:600;">Abstract ▸</span>
+                  <div style="font-size:12px; color:#444; line-height:1.5; margin-top:4px;">{a['abstract']}</div>
+                </div>
               </td>
             </tr>"""
+
+        if without_abs:
+            rows += f"""
+            <tr>
+              <td style="padding:{'14px' if with_abs else '4px'} 0 6px 0;">
+                <div style="font-size:11px; color:#94a3b8; font-style:italic;">RSS 未提供摘要，可点击标题查看全文</div>
+              </td>
+            </tr>"""
+            for a in without_abs:
+                rows += f"""
+            <tr>
+              <td style="padding:8px 0; border-bottom:1px solid #eee; vertical-align:top;">
+                <div style="font-size:15px; font-weight:600; margin-bottom:4px;">
+                  <a href="{a['link']}" style="color:#1a56db; text-decoration:none;">{a['title']}</a>
+                </div>
+                {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + a['date'] + "</div>" if a['date'] else ""}
+                {"<div style='font-size:12px; color:#666;'>" + a['authors'] + "</div>" if a['authors'] else ""}
+              </td>
+            </tr>"""
+
         sections += f"""
         <div style="margin-bottom:28px;">
           <h2 style="font-size:16px; color:#1e293b; border-left:4px solid #1a56db;
