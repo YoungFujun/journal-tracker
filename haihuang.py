@@ -222,11 +222,13 @@ def _reconstruct_abstract(inverted_index: dict) -> str:
 
 
 def enrich_abstracts(articles: dict):
-    """对摘要为空的文章通过 OpenAlex 补充摘要。
-    策略：先用 DOI 精确查询；无 DOI 或查不到摘要时改用标题搜索。
+    """对摘要为空的文章通过 OpenAlex DOI 精确查询补充摘要。
+    ScienceDirect 期刊（链接含 sciencedirect.com）无公开 DOI，跳过补充。
     """
     missing = [(j, i) for j, items in articles.items()
-               for i, a in enumerate(items) if not a["abstract"]]
+               for i, a in enumerate(items)
+               if not _is_real_abstract(a["abstract"])
+               and "sciencedirect.com" not in a.get("link", "")]
     if not missing:
         print("  摘要补充：无需补充")
         return
@@ -240,7 +242,7 @@ def enrich_abstracts(articles: dict):
         a = articles[journal][idx]
         abstract = ""
 
-        # 1. DOI 精确查询
+        # DOI 精确查询
         doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
         if doi:
             try:
@@ -252,21 +254,6 @@ def enrich_abstracts(articles: dict):
                     abstract = _reconstruct_abstract(
                         json.loads(resp.read()).get("abstract_inverted_index")
                     )
-            except Exception:
-                pass
-            time.sleep(0.1)
-
-        # 2. 标题搜索兜底（DOI 无结果时）
-        if not abstract:
-            try:
-                q = urllib.parse.quote(a["title"])
-                url = f"https://api.openalex.org/works?search={q}&per-page=1&select=abstract_inverted_index"
-                with urllib.request.urlopen(
-                    urllib.request.Request(url, headers=headers), timeout=10
-                ) as resp:
-                    results = json.loads(resp.read()).get("results", [])
-                if results:
-                    abstract = _reconstruct_abstract(results[0].get("abstract_inverted_index"))
             except Exception:
                 pass
             time.sleep(0.1)
