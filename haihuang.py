@@ -121,11 +121,16 @@ def fetch_rss(seen: set) -> tuple:
                 elif hasattr(entry, "author"):
                     authors = entry.author
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
-                # ScienceDirect RSS 不含标准作者字段，从 summary 元数据中提取
-                if not authors and "sciencedirect.com" in entry.get("link", ""):
-                    m = re.search(r'Author\(s\):\s*(.+?)$', summary, re.MULTILINE)
-                    if m:
-                        authors = m.group(1).strip()
+                # ScienceDirect RSS 不含标准作者/日期字段，从 summary 元数据中提取
+                if "sciencedirect.com" in entry.get("link", ""):
+                    if not authors:
+                        m = re.search(r'Author\(s\):\s*(.+?)$', summary, re.MULTILINE)
+                        if m:
+                            authors = m.group(1).strip()
+                    if not pub_str:
+                        m = re.search(r'Publication date:\s*(.+?)Source:', summary)
+                        if m:
+                            pub_str = m.group(1).strip()
                 new_items.append({
                     "title":    entry.get("title", "(no title)").strip(),
                     "link":     entry.get("link", ""),

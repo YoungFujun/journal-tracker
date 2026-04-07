@@ -76,6 +76,9 @@ journal-tracker/
 
 1. **RSS**（优先）：实时性好，直接从出版社拉取；仅保留 7 天内发表的文章
 2. **CrossRef API**（备选）：用于无公开 RSS 的期刊（如 AER），抓取近 7 天内发表文章
+3. **OpenAlex API**（摘要补充）：对 RSS/CrossRef 未提供摘要的文章，通过 DOI 精确查询补充；不做标题搜索（会导致错误匹配）
+
+**ScienceDirect 特殊处理**：RSS 链接为 PII 格式（无 DOI），且 RSS 的 `summary` 字段为卷期元数据而非摘要；作者和发布月份从 `summary` 中正则提取，摘要跳过补充直接留空。
 
 新增期刊时，先查出版社网站是否提供 RSS；无 RSS 则用 CrossRef（需要 ISSN）。
 
