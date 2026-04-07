@@ -7,9 +7,17 @@ on:
   workflow_dispatch:
     inputs:
       run_main:
-        description: "Run journal_tracker.py (main)"
+        description: "Run journal_tracker.py (main, 正式)"
         type: boolean
         default: true
+      test_main:
+        description: "Run journal_tracker.py (main, 测试·不写缓存)"
+        type: boolean
+        default: false
+      test_label:
+        description: "测试邮件标题标签（test_main=true 时生效）"
+        type: string
+        default: ""
       run_yifanxu:
         description: "Run yifanxu.py"
         type: boolean
@@ -41,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: pip install feedparser
 
-      - name: Run tracker (main)
+      - name: Run tracker (main, 正式)
         if: github.event_name == 'schedule' || inputs.run_main == true
         env:
           EMAIL_SENDER:    ${{ secrets.EMAIL_SENDER }}
@@ -49,6 +57,16 @@ jobs:
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
           EMAIL_ALERT:     ${{ secrets.EMAIL_ALERT }}
         run: python journal_tracker.py
+
+      - name: Run tracker (main, 测试)
+        if: inputs.test_main == true
+        env:
+          EMAIL_SENDER:    ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:  ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          EMAIL_ALERT:     ${{ secrets.EMAIL_ALERT }}
+          TEST_LABEL:      ${{ inputs.test_label }}
+        run: python journal_tracker.py --test
 
       - name: Run tracker (yifanxu)
         if: github.event_name == 'schedule' || inputs.run_yifanxu == true

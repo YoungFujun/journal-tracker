@@ -11,6 +11,7 @@ import os
 import json
 import sys
 import re
+import time
 import smtplib
 import feedparser
 import urllib.request
@@ -102,6 +103,7 @@ def fetch_rss(seen: set) -> tuple:
                     "abstract": summary,
                     "date":     pub_str,
                     "uid":      uid,
+                    "doi":      entry.get("prism_doi", ""),
                 })
             if new_items:
                 results[name] = new_items
@@ -159,6 +161,50 @@ def fetch_crossref(seen: set) -> tuple:
             errors[name] = str(e)
             print(f"  {name}: ERROR (CrossRef) - {e}")
     return results, errors
+
+
+# ── CrossRef 摘要补充 ─────────────────────────────────────────────────────────
+def _extract_doi(url: str) -> str:
+    """从 URL 中提取 DOI（格式：10.xxxx/...）"""
+    m = re.search(r'(10\.\d{4,}/[^\s&?#"<>]+)', url)
+    if m:
+        return m.group(1).rstrip('.,;)')
+    return ""
+
+
+def enrich_abstracts(articles: dict):
+    """对 RSS 来源中摘要为空的文章，尝试通过 CrossRef DOI 查询补充摘要。"""
+    missing = []
+    for journal, items in articles.items():
+        for idx, a in enumerate(items):
+            if not a["abstract"]:
+                doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
+                if doi:
+                    missing.append((journal, idx, doi))
+
+    if not missing:
+        print("  摘要补充：无需补充")
+        return
+
+    print(f"  摘要补充：对 {len(missing)} 篇文章查询 CrossRef...")
+    enriched = 0
+    for journal, idx, doi in missing:
+        try:
+            url = f"https://api.crossref.org/works/{doi}?select=abstract"
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            abstract = data.get("message", {}).get("abstract", "")
+            if abstract:
+                articles[journal][idx]["abstract"] = re.sub(r"<[^>]+>", "", abstract).strip()
+                enriched += 1
+        except Exception:
+            pass
+        time.sleep(0.1)
+    print(f"  摘要补充完成：{enriched}/{len(missing)} 篇补充成功")
 
 
 # ── 构建 HTML ─────────────────────────────────────────────────────────────────
@@ -292,6 +338,7 @@ def main():
     articles, rss_errors    = fetch_rss(seen)
     cr_results, cr_errors   = fetch_crossref(seen)
     articles.update(cr_results)
+    enrich_abstracts(articles)
     all_errors = {**rss_errors, **cr_errors}
 
     # 测试模式不更新失败计数，不发告警

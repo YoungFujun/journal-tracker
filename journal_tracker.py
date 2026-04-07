@@ -4,8 +4,10 @@ Journal RSS Tracker
 """
 
 import os
+import sys
 import json
 import re
+import time
 import smtplib
 import feedparser
 import urllib.request
@@ -55,6 +57,8 @@ ALERT_RECIPIENT  = os.environ.get("EMAIL_ALERT", "")
 FAIL_THRESHOLD   = 5
 SCRIPT_NAME      = "journal_tracker"
 START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
+
+TEST_MODE = "--test" in sys.argv
 
 
 # ── 缓存读写 ──────────────────────────────────────────────────────────────────
@@ -107,6 +111,7 @@ def fetch_new_articles(seen: set) -> tuple:
                         "abstract": summary,
                         "date":     pub_str,
                         "uid":      uid,
+                        "doi":      entry.get("prism_doi", ""),
                     })
             if new_items:
                 results[name] = new_items
@@ -162,6 +167,50 @@ def fetch_crossref_articles(seen: set) -> tuple:
     return results, errors
 
 
+# ── CrossRef 摘要补充 ─────────────────────────────────────────────────────────
+def _extract_doi(url: str) -> str:
+    """从 URL 中提取 DOI（格式：10.xxxx/...）"""
+    m = re.search(r'(10\.\d{4,}/[^\s&?#"<>]+)', url)
+    if m:
+        return m.group(1).rstrip('.,;)')
+    return ""
+
+
+def enrich_abstracts(articles: dict):
+    """对 RSS 来源中摘要为空的文章，尝试通过 CrossRef DOI 查询补充摘要。"""
+    missing = []
+    for journal, items in articles.items():
+        for idx, a in enumerate(items):
+            if not a["abstract"]:
+                doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
+                if doi:
+                    missing.append((journal, idx, doi))
+
+    if not missing:
+        print("  摘要补充：无需补充")
+        return
+
+    print(f"  摘要补充：对 {len(missing)} 篇文章查询 CrossRef...")
+    enriched = 0
+    for journal, idx, doi in missing:
+        try:
+            url = f"https://api.crossref.org/works/{doi}?select=abstract"
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            abstract = data.get("message", {}).get("abstract", "")
+            if abstract:
+                articles[journal][idx]["abstract"] = re.sub(r"<[^>]+>", "", abstract).strip()
+                enriched += 1
+        except Exception:
+            pass
+        time.sleep(0.1)
+    print(f"  摘要补充完成：{enriched}/{len(missing)} 篇补充成功")
+
+
 # ── 构建 HTML ─────────────────────────────────────────────────────────────────
 def build_html(new_articles: dict, week_str: str) -> str:
     total = sum(len(v) for v in new_articles.values())
@@ -207,9 +256,9 @@ def build_html(new_articles: dict, week_str: str) -> str:
 
 
 # ── 发送邮件 ──────────────────────────────────────────────────────────────────
-def send_email(html: str, week_str: str, total: int, issue_num: int):
+def send_email(html: str, subject: str):
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"第{issue_num}期 · Journal Weekly Digest · {total} new articles — {week_str}"
+    msg["Subject"] = subject
     msg["From"]    = SENDER
     msg["To"]      = ", ".join(RECIPIENTS)
     msg.attach(MIMEText(html, "html", "utf-8"))
@@ -283,43 +332,55 @@ def send_alert(triggered: dict):
 def main():
     week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
     issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
-    print(f"=== Journal Tracker · {week_str} · 第{issue_num}期 ===")
-    seen        = load_seen()
+    mode_label = "【测试模式·全量】" if TEST_MODE else "【增量模式】"
+    print(f"=== Journal Tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
+
+    seen        = set() if TEST_MODE else load_seen()
     fail_counts = load_fail_counts()
     print(f"Previously seen: {len(seen)} articles")
 
     new_articles, rss_errors      = fetch_new_articles(seen)
     crossref_results, cr_errors   = fetch_crossref_articles(seen)
     new_articles.update(crossref_results)
+    enrich_abstracts(new_articles)
     all_errors = {**rss_errors, **cr_errors}
 
-    # 更新失败计数：成功归零，失败+1
-    all_names = [n for n, _ in JOURNALS] + [n for n, _ in CROSSREF_JOURNALS]
-    for name in all_names:
-        fail_counts[name] = fail_counts.get(name, 0) + 1 if name in all_errors else 0
-    save_fail_counts(fail_counts)
+    # 测试模式不更新失败计数，不发告警
+    if not TEST_MODE:
+        all_names = [n for n, _ in JOURNALS] + [n for n, _ in CROSSREF_JOURNALS]
+        for name in all_names:
+            fail_counts[name] = fail_counts.get(name, 0) + 1 if name in all_errors else 0
+        save_fail_counts(fail_counts)
 
-    # 恰好达到阈值时触发告警
-    triggered = {
-        name: (all_errors[name], fail_counts[name])
-        for name in all_errors
-        if fail_counts[name] == FAIL_THRESHOLD
-    }
-    if triggered:
-        send_alert(triggered)
+        triggered = {
+            name: (all_errors[name], fail_counts[name])
+            for name in all_errors
+            if fail_counts[name] == FAIL_THRESHOLD
+        }
+        if triggered:
+            send_alert(triggered)
 
     total = sum(len(v) for v in new_articles.values())
     print(f"New articles found: {total}")
     if total == 0:
         print("Nothing new this week, skipping email.")
         return
-    for items in new_articles.values():
-        for a in items:
-            seen.add(a["uid"])
-    save_seen(seen)
+
     html = build_html(new_articles, week_str)
-    send_email(html, week_str, total, issue_num)
-    print("Done.")
+
+    if TEST_MODE:
+        label   = os.environ.get("TEST_LABEL", f"第{issue_num}期 · Journal Weekly Digest")
+        subject = f"测试 · {label} · {total} articles — {week_str}"
+        send_email(html, subject)
+        print("测试完成，缓存未更新。")
+    else:
+        subject = f"第{issue_num}期 · Journal Weekly Digest · {total} new articles — {week_str}"
+        for items in new_articles.values():
+            for a in items:
+                seen.add(a["uid"])
+        save_seen(seen)
+        send_email(html, subject)
+        print("Done.")
 
 
 if __name__ == "__main__":
