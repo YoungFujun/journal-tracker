@@ -105,6 +105,11 @@ def fetch_rss(seen: set) -> tuple:
                 elif hasattr(entry, "author"):
                     authors = entry.author
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
+                # ScienceDirect RSS 不含标准作者字段，从 summary 元数据中提取
+                if not authors and "sciencedirect.com" in entry.get("link", ""):
+                    m = re.search(r'Author\(s\):\s*(.+?)$', summary, re.MULTILINE)
+                    if m:
+                        authors = m.group(1).strip()
                 new_items.append({
                     "title":    entry.get("title", "(no title)").strip(),
                     "link":     entry.get("link", ""),
@@ -254,8 +259,8 @@ def build_html(articles: dict, week_str: str) -> str:
     total = sum(len(v) for v in articles.values())
     sections = ""
     for journal, items in articles.items():
-        with_abs    = [a for a in items if a.get("abstract")]
-        without_abs = [a for a in items if not a.get("abstract")]
+        with_abs    = [a for a in items if _is_real_abstract(a.get("abstract", ""))]
+        without_abs = [a for a in items if not _is_real_abstract(a.get("abstract", ""))]
         rows = ""
 
         for a in with_abs:
@@ -268,8 +273,7 @@ def build_html(articles: dict, week_str: str) -> str:
                 {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + a['date'] + "</div>" if a['date'] else ""}
                 {"<div style='font-size:12px; color:#666; margin-bottom:4px;'>" + a['authors'] + "</div>" if a['authors'] else ""}
                 <div style="background:#f1f5f9; border-radius:4px; padding:8px 12px; margin-top:4px;">
-                  <span style="font-size:11px; color:#64748b; font-weight:600;">Abstract ▸</span>
-                  <div style="font-size:12px; color:#444; line-height:1.5; margin-top:4px;">{a['abstract']}</div>
+                  <div style="font-size:12px; color:#444; line-height:1.5;">{a['abstract']}</div>
                 </div>
               </td>
             </tr>"""
@@ -278,7 +282,7 @@ def build_html(articles: dict, week_str: str) -> str:
             rows += f"""
             <tr>
               <td style="padding:{'14px' if with_abs else '4px'} 0 6px 0;">
-                <div style="font-size:11px; color:#94a3b8; font-style:italic;">RSS 未提供摘要，可点击标题查看全文</div>
+                <div style="font-size:11px; color:#94a3b8; font-style:italic;">Abstract not provided by RSS feed — click the title to read the full article.</div>
               </td>
             </tr>"""
             for a in without_abs:
@@ -295,8 +299,9 @@ def build_html(articles: dict, week_str: str) -> str:
 
         sections += f"""
         <div style="margin-bottom:28px;">
-          <h2 style="font-size:16px; color:#1e293b; border-left:4px solid #1a56db;
-                     padding-left:10px; margin:0 0 12px 0;">{journal}
+          <h2 style="font-size:17px; color:#1e293b; background:#f0f4ff;
+                     border-left:5px solid #1a56db; padding:10px 14px;
+                     margin:0 0 14px 0; border-radius:0 4px 4px 0;">{journal}
             <span style="font-weight:normal; font-size:13px; color:#64748b;">({len(items)} articles)</span>
           </h2>
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
