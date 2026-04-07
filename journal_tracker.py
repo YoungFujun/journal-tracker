@@ -11,6 +11,7 @@ import time
 import smtplib
 import feedparser
 import urllib.request
+import urllib.parse
 from datetime import datetime, timezone, timedelta, date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -167,47 +168,79 @@ def fetch_crossref_articles(seen: set) -> tuple:
     return results, errors
 
 
-# ── CrossRef 摘要补充 ─────────────────────────────────────────────────────────
+# ── OpenAlex 摘要补充 ─────────────────────────────────────────────────────────
 def _extract_doi(url: str) -> str:
-    """从 URL 中提取 DOI（格式：10.xxxx/...）"""
+    """从 URL 中提取 DOI（格式：10.xxxx/...）。"""
     m = re.search(r'(10\.\d{4,}/[^\s&?#"<>]+)', url)
-    if m:
-        return m.group(1).rstrip('.,;)')
-    return ""
+    if not m:
+        return ""
+    return m.group(1).rstrip('.,;)')
+
+
+def _reconstruct_abstract(inverted_index: dict) -> str:
+    """将 OpenAlex 倒排索引格式还原为摘要文本。"""
+    if not inverted_index:
+        return ""
+    words: dict[int, str] = {}
+    for word, positions in inverted_index.items():
+        for pos in positions:
+            words[pos] = word
+    return " ".join(words[i] for i in sorted(words))
 
 
 def enrich_abstracts(articles: dict):
-    """对 RSS 来源中摘要为空的文章，尝试通过 CrossRef DOI 查询补充摘要。"""
-    missing = []
-    for journal, items in articles.items():
-        for idx, a in enumerate(items):
-            if not a["abstract"]:
-                doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
-                if doi:
-                    missing.append((journal, idx, doi))
-
+    """对摘要为空的文章通过 OpenAlex 补充摘要。
+    策略：先用 DOI 精确查询；无 DOI 或查不到摘要时改用标题搜索。
+    """
+    missing = [(j, i) for j, items in articles.items()
+               for i, a in enumerate(items) if not a["abstract"]]
     if not missing:
         print("  摘要补充：无需补充")
         return
 
-    print(f"  摘要补充：对 {len(missing)} 篇文章查询 CrossRef...")
+    print(f"  摘要补充：对 {len(missing)} 篇文章查询 OpenAlex...")
+    headers = {"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
     enriched = 0
-    for journal, idx, doi in missing:
-        try:
-            url = f"https://api.crossref.org/works/{doi}?select=abstract"
-            req = urllib.request.Request(
-                url,
-                headers={"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read())
-            abstract = data.get("message", {}).get("abstract", "")
-            if abstract:
-                articles[journal][idx]["abstract"] = re.sub(r"<[^>]+>", "", abstract).strip()
-                enriched += 1
-        except Exception:
-            pass
-        time.sleep(0.1)
+
+    for journal, idx in missing:
+        a = articles[journal][idx]
+        abstract = ""
+
+        # 1. DOI 精确查询
+        doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
+        if doi:
+            try:
+                doi_url = urllib.parse.quote(f"https://doi.org/{doi}", safe="")
+                url = f"https://api.openalex.org/works/{doi_url}?select=abstract_inverted_index"
+                with urllib.request.urlopen(
+                    urllib.request.Request(url, headers=headers), timeout=10
+                ) as resp:
+                    abstract = _reconstruct_abstract(
+                        json.loads(resp.read()).get("abstract_inverted_index")
+                    )
+            except Exception:
+                pass
+            time.sleep(0.1)
+
+        # 2. 标题搜索兜底（DOI 无结果时）
+        if not abstract:
+            try:
+                q = urllib.parse.quote(a["title"])
+                url = f"https://api.openalex.org/works?search={q}&per-page=1&select=abstract_inverted_index"
+                with urllib.request.urlopen(
+                    urllib.request.Request(url, headers=headers), timeout=10
+                ) as resp:
+                    results = json.loads(resp.read()).get("results", [])
+                if results:
+                    abstract = _reconstruct_abstract(results[0].get("abstract_inverted_index"))
+            except Exception:
+                pass
+            time.sleep(0.1)
+
+        if abstract:
+            articles[journal][idx]["abstract"] = abstract
+            enriched += 1
+
     print(f"  摘要补充完成：{enriched}/{len(missing)} 篇补充成功")
 
 
