@@ -23,9 +23,8 @@ from pathlib import Path
 
 # ── 期刊列表（RSS）───────────────────────────────────────────────────────────
 JOURNALS = [
-    ("The Quarterly Journal of Economics",     "https://academic.oup.com/rss/site_5504/3365.xml"),
+    # OUP 期刊（QJE、RES）改用 CrossRef，见下方
     ("Journal of Political Economy",           "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"),
-    ("The Review of Economic Studies",         "https://academic.oup.com/rss/site_5508/3369.xml"),
     ("Econometrica",                           "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
     ("Journal of Labor Economics",             "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jole"),
     ("Journal of Development Economics",       "https://rss.sciencedirect.com/publication/science/03043878"),
@@ -43,6 +42,9 @@ JOURNALS = [
 CROSSREF_JOURNALS = [
     ("American Economic Review",               "0002-8282"),
     ("The Review of Economics and Statistics", "0034-6535"),
+    # OUP RSS 为静态当期期号 feed，改用 CrossRef
+    ("The Quarterly Journal of Economics",     "0033-5533"),
+    ("The Review of Economic Studies",         "0034-6527"),
 ]
 
 # ── 配置（从环境变量读取）────────────────────────────────────────────────────
@@ -85,7 +87,7 @@ def save_fail_counts(counts: dict):
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
 def fetch_rss(seen: set) -> tuple:
     results, errors = {}, {}
-    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=21)
     for name, url in JOURNALS:
         try:
             feed = feedparser.parse(url)
@@ -117,7 +119,7 @@ def fetch_rss(seen: set) -> tuple:
                             pub_str = m.group(1).strip()
                 new_items.append({
                     "title":    entry.get("title", "(no title)").strip(),
-                    "link":     entry.get("link", ""),
+                    "link":     entry.get("link", "").replace("?af=R", ""),
                     "authors":  authors,
                     "abstract": summary,
                     "date":     pub_str,
@@ -138,7 +140,7 @@ def fetch_rss(seen: set) -> tuple:
 # ── 抓取 CrossRef ─────────────────────────────────────────────────────────────
 def fetch_crossref(seen: set) -> tuple:
     results, errors = {}, {}
-    from_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+    from_date = (datetime.now(timezone.utc) - timedelta(days=21)).strftime("%Y-%m-%d")
     for name, issn in CROSSREF_JOURNALS:
         try:
             url = (

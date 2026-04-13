@@ -8,7 +8,7 @@
 ## 功能
 
 - 覆盖 16 个主流期刊（见下表），每周一北京时间 09:00 自动运行
-- 仅推送过去 7 天内发表、且上次运行后新出现的文章，不重复、不遗漏
+- 仅推送过去 **21 天**内发表、且上次运行后新出现的文章，不重复、不遗漏（21 天窗口可覆盖部分出版商 RSS 的时间戳滞后问题）
 - 邮件标题包含期号（第1期、第2期……），自动按发送日期递增计算
 - 邮件包含：文章标题（可点击跳转）、作者、发布日期、摘要（通过 OpenAlex API 补充；ScienceDirect 期刊 RSS 不提供摘要，仅显示标题与作者）
 - 邮件内每个期刊分两组展示：有摘要文章排前（摘要置于灰色框内），无摘要文章排后并附提示
@@ -95,9 +95,16 @@ JOURNALS = [
 大多数期刊可在出版社网站找到 RSS 链接：
 - **Elsevier (ScienceDirect)**：`https://rss.sciencedirect.com/publication/science/{ISSN（去掉连字符）}`
 - **Wiley**：`https://onlinelibrary.wiley.com/feed/{eISSN（去掉连字符）}/most-recent`
-- **Oxford (OUP)**：在期刊主页找 RSS 图标获取链接
+- **Oxford (OUP)**：OUP RSS 为静态当期 feed，**建议直接用 CrossRef**，不用 RSS
 
-对于没有公开 RSS 的期刊（如 AER），本项目使用 [CrossRef API](https://api.crossref.org) 作为数据来源，在 `CROSSREF_JOURNALS` 列表中填写期刊名和 ISSN 即可：
+对于没有公开 RSS、或 RSS 存在以下问题的期刊，本项目使用 [CrossRef API](https://api.crossref.org) 作为数据来源：
+
+- **无 RSS**（如 AER）
+- **OUP 期刊**（QJE、RES、RFS 等）：OUP RSS 是静态当期 feed，季刊/双月刊的间隔期内文章日期不更新，任何时间窗口都无法覆盖
+- **Chicago etoc 双月刊以上**（如 AJS）：同类静态 feed 问题，且 advance access 文章不出现在 RSS
+- **RSS 已失效**（如 SMR，Sage 平台某些期刊停止更新 RSS）
+
+在 `CROSSREF_JOURNALS` 列表中填写期刊名和 ISSN 即可：
 
 ```python
 CROSSREF_JOURNALS = [
@@ -105,6 +112,8 @@ CROSSREF_JOURNALS = [
     ...
 ]
 ```
+
+新增期刊时，建议先用 CrossRef API 确认 ISSN 正确（能查到近期文章）。不确定应用 RSS 还是 CrossRef 时，优先选 CrossRef（数据更可靠，不受 feed 格式影响）。
 
 ---
 
@@ -144,7 +153,7 @@ CROSSREF_JOURNALS = [
 
 1. GitHub Actions 按计划触发脚本
 2. 脚本从各期刊 RSS/CrossRef 拉取文章列表
-3. 过滤掉 7 天前发表的文章，再与缓存文件对比，筛出本周新增文章
+3. 过滤掉 21 天前发表的文章，再与缓存文件对比，筛出本周新增文章
 4. 通过 OpenAlex API（DOI 精确查询）为缺少摘要的文章补充摘要；ScienceDirect 期刊跳过（RSS 无公开 DOI）
 5. 将新文章整理成 HTML 邮件（有摘要/无摘要分组展示），通过 163 SMTP 发送
 6. 更新缓存并提交回仓库，确保下次运行不重复

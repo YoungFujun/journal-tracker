@@ -74,13 +74,25 @@ journal-tracker/
 
 ## 数据源优先级
 
-1. **RSS**（优先）：实时性好，直接从出版社拉取；仅保留 7 天内发表的文章
-2. **CrossRef API**（备选）：用于无公开 RSS 的期刊（如 AER），抓取近 7 天内发表文章
+1. **RSS**（优先）：实时性好，直接从出版社拉取；保留 **21 天**内发表的文章
+2. **CrossRef API**（备选/OUP 专用）：用于无 RSS 期刊及 OUP 期刊（QJE/RES/RFS），抓取近 21 天内发表文章
 3. **OpenAlex API**（摘要补充）：对 RSS/CrossRef 未提供摘要的文章，通过 DOI 精确查询补充；不做标题搜索（会导致错误匹配）
 
 **ScienceDirect 特殊处理**：RSS 链接为 PII 格式（无 DOI），且 RSS 的 `summary` 字段为卷期元数据而非摘要；作者和发布月份从 `summary` 中正则提取，摘要跳过补充直接留空。
 
-新增期刊时，先查出版社网站是否提供 RSS；无 RSS 则用 CrossRef（需要 ISSN）。
+**静态当期 RSS（不可用）**：以下出版商的 RSS 以整期为单位更新，期间内所有文章日期固定在上一期出版日，可能超过窗口很久：
+- **OUP**（QJE/RES/RFS）：季刊，文章发布日距今常超 90 天 → 改用 CrossRef
+- **Chicago etoc 双月刊以上**（AJS）：文章日期固定在出版日，advance access 文章不出现在 RSS → 改用 CrossRef
+- 识别方法：检查 RSS 所有条目是否日期完全相同，或最新条目日期远早于今天
+
+**Chicago etoc RSS 滞后（仍可用）**：JPE/JOLE 的 RSS published 日期（正式出版日）早于文章实际进入 feed 的日期（约晚 1 周），21 天窗口可覆盖此延迟。
+
+**RSS 静默失效**：Sage 等平台的 RSS 可能在无告警的情况下停止更新（fail_count 不会增加，因为 fetch 不报错，只是返回旧文章）。目前 SMR（Sociological Methods & Research）已出现此情况 → 改用 CrossRef。
+
+新增期刊时的决策顺序：
+1. 检查出版商：OUP / Chicago 双月刊以上 → 直接用 CrossRef（不试 RSS）
+2. 用 CrossRef 核查近 21 天有无文章（见下方核查脚本），确认 ISSN 正确
+3. 若用 RSS：观察首次运行后 feed 条目的日期分布，全部相同日期 = 静态 feed，需迁移 CrossRef
 
 ## 本地开发注意事项
 
@@ -91,3 +103,51 @@ git update-index --skip-worktree seen_articles.json seen_yifanxu.json seen_haihu
 ```
 
 新克隆仓库后需重新执行上述命令，否则这些文件会出现在 `git status` 中。
+
+## 缓存状态管理
+
+**重要**：本地 `seen_*.json` 因 `skip-worktree` 不跟踪 GitHub Actions 的写入，本地文件是陈旧的。调试时始终查远端：
+
+```bash
+# 查看远端缓存（不影响本地文件）
+git fetch origin
+git show origin/main:seen_articles.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d),'entries')"
+
+# 检查某个 DOI 是否已发送
+git show origin/main:seen_articles.json | python3 -c "
+import json,sys,urllib.parse
+seen = set(json.load(sys.stdin))
+doi = '10.1086/739323'  # 替换为要查的 DOI
+url = f'https://www.journals.uchicago.edu/doi/abs/{doi}?af=R'
+print('in seen:', doi in seen or url in seen)
+"
+```
+
+**核查某期刊是否有漏文**（以 CrossRef 为准）：
+
+```bash
+python3 -c "
+import urllib.request, json, subprocess
+from datetime import datetime, timezone, timedelta
+
+issn = '0022-3808'  # JPE；替换为目标期刊 ISSN
+from_date = (datetime.now(timezone.utc) - timedelta(days=21)).strftime('%Y-%m-%d')
+url = f'https://api.crossref.org/journals/{issn}/works?sort=published&order=desc&rows=30&filter=from-pub-date:{from_date}&select=DOI,title,published'
+req = urllib.request.Request(url, headers={'User-Agent': 'journal-tracker/1.0'})
+items = json.loads(urllib.request.urlopen(req, timeout=15).read())['message']['items']
+
+seen = set()
+for fname in ['seen_articles.json','seen_yifanxu.json','seen_haihuang.json','seen_jiahuitan.json']:
+    r = subprocess.run(['git','show',f'origin/main:{fname}'], capture_output=True, text=True)
+    if r.returncode == 0: seen |= set(json.loads(r.stdout))
+
+for item in items:
+    doi = item.get('DOI','')
+    title = ' '.join(item.get('title',['?']))
+    pd = item.get('published',{}).get('date-parts',[[]])[0]
+    pub = '-'.join(str(p) for p in pd) if pd else '?'
+    url_var = f'https://www.journals.uchicago.edu/doi/abs/{doi}?af=R'
+    sent = doi in seen or url_var in seen
+    print(f'[{pub}] {\"✓\" if sent else \"✗\"} {title[:65]}')
+"
+```
