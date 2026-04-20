@@ -329,7 +329,7 @@ def build_html(articles: dict, week_str: str) -> str:
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <div style="max-width:760px; margin:0 auto; padding:34px 42px 28px 42px; background:#ffffff;">
-    <div style="padding:0 0 26px 0; margin-bottom:34px; border-bottom:1px solid #e5e7eb;">
+    <div style="padding:0 0 26px 0; margin-bottom:34px;">
       <h1 style="color:#111827; margin:0; font-size:26px; line-height:1.25; font-weight:800;">Journal Weekly Digest</h1>
       <p style="color:#4b5563; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals</p>
       <p style="margin:18px 0 0 0; font-size:15px; color:#374151; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
