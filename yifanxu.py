@@ -284,10 +284,14 @@ def build_html(articles: dict, week_str: str) -> str:
         journal_name = _html_text(journal)
         anchor = _html_attr("journal-" + re.sub(r"[^a-z0-9]+", "-", journal.lower()).strip("-"))
         toc_links.append(
-            f'<a href="#{anchor}" style="color:#2563eb; text-decoration:none; white-space:nowrap;">'
-            f'{journal_name} ({len(items)})</a>'
+            f'<td style="width:50%; padding:4px 14px 4px 0; vertical-align:top; font-size:14px; line-height:1.45;">'
+            f'<a href="#{anchor}" style="color:#2563eb; text-decoration:none;">{journal_name}</a>'
+            f' <span style="color:#6b7280;">({len(items)})</span></td>'
         )
-    toc = "<span style='color:#9ca3af;'> · </span>".join(toc_links)
+    toc_rows = ""
+    for i in range(0, len(toc_links), 2):
+        right = toc_links[i + 1] if i + 1 < len(toc_links) else '<td style="width:50%; padding:4px 0;">&nbsp;</td>'
+        toc_rows += f"<tr>{toc_links[i]}{right}</tr>"
     sections = ""
     for journal, items in articles.items():
         with_abs    = [a for a in items if _is_real_abstract(a.get("abstract", ""))]
@@ -311,11 +315,11 @@ def build_html(articles: dict, week_str: str) -> str:
                     </td>
                   </tr>
                 </table>
-                {"<div style='font-size:15px; color:#1f2937; font-weight:500; line-height:1.45; margin:9px 0 0 30px;'>" + authors + "</div>" if authors else ""}
-                <div style="font-size:14px; color:#6b7280; margin:7px 0 0 30px;">
+                {"<div style='font-size:15px; color:#1f2937; font-weight:500; line-height:1.45; margin:9px 0 0 40px;'>" + authors + "</div>" if authors else ""}
+                <div style="font-size:14px; color:#6b7280; margin:7px 0 0 40px;">
                   {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
                 </div>
-                {"<div style='font-size:15px; color:#1f2937; line-height:1.65; margin:10px 0 0 30px;'>" + abstract + "</div>" if abstract else ""}
+                {"<div style='font-size:15px; color:#1f2937; line-height:1.65; margin:10px 0 0 40px;'>" + abstract + "</div>" if abstract else ""}
               </td>
             </tr>"""
 
@@ -324,16 +328,16 @@ def build_html(articles: dict, week_str: str) -> str:
         no_abs_note = ""
         if without_abs:
             no_abs_note = (
-                f'<div style="font-size:14px; color:#6b7280; line-height:1.45; margin:-6px 0 16px 0;">'
+                f'<div style="font-size:14px; color:#6b7280; line-height:1.45; margin:-8px 0 18px 0;">'
                 f'{len(without_abs)} article{"s" if len(without_abs) != 1 else ""} in this journal do not provide abstracts via RSS.'
                 f'</div>'
             )
         sections += f"""
-        <div id="{anchor}" style="margin:42px 0 12px 0;">
-          <h2 style="font-size:18px; color:#1f2937; letter-spacing:1px; text-transform:uppercase;
-                     border-top:2px solid #111827; border-bottom:1px solid #d1d5db; padding:12px 0 10px 0;
-                     margin:0 0 18px 0; font-weight:800;">{journal_name}
-            <span style="font-weight:400; font-size:14px; color:#6b7280; letter-spacing:0; text-transform:none;">({len(items)} articles)</span>
+        <div id="{anchor}" style="margin:46px 0 14px 0;">
+          <h2 style="font-size:20px; color:#111827; letter-spacing:1.2px; text-transform:uppercase;
+                     border-top:3px solid #111827; border-bottom:1px solid #9ca3af; padding:14px 0 11px 0;
+                     margin:0 0 20px 0; font-weight:900;">{journal_name}
+            <span style="font-weight:500; font-size:15px; color:#4b5563; letter-spacing:0; text-transform:none;">({len(items)} articles)</span>
           </h2>
           {no_abs_note}
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
@@ -343,13 +347,14 @@ def build_html(articles: dict, week_str: str) -> str:
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <div style="max-width:760px; margin:0 auto; padding:34px 42px 28px 42px; background:#ffffff;">
-    <div style="border-bottom:1px solid #e5e7eb; padding-bottom:18px;">
-      <h1 style="color:#111827; margin:0; font-size:25px; line-height:1.25; font-weight:700;">Journal Weekly Digest</h1>
-      <p style="color:#6b7280; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals</p>
+    <div style="background:#f8fafc; border:1px solid #e5e7eb; border-left:5px solid #111827; padding:22px 26px; margin-bottom:24px;">
+      <h1 style="color:#111827; margin:0; font-size:26px; line-height:1.25; font-weight:800;">Journal Weekly Digest</h1>
+      <p style="color:#4b5563; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals</p>
+      <p style="margin:18px 0 0 0; font-size:15px; color:#374151; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
     </div>
-    <p style="margin:26px 0 0 0; font-size:16px; color:#1f2937; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
-    <div style="font-size:14px; color:#374151; line-height:1.8; margin:18px 0 0 0; padding:12px 0 14px 0; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb;">
-      <span style="font-weight:700; color:#111827;">Journals in this issue:</span> {toc}
+    <div style="margin:0 0 34px 0; padding:16px 18px; border:1px solid #e5e7eb; background:#ffffff;">
+      <div style="font-size:13px; letter-spacing:1.4px; text-transform:uppercase; font-weight:800; color:#111827; margin-bottom:8px;">Journals in this issue</div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">{toc_rows}</table>
     </div>
     <div>{sections}</div>
     <div style="margin-top:32px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af;">
