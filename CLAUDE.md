@@ -8,14 +8,15 @@ journal-tracker/
 ├── yifanxu.py                # 【个性化子程序】为朋友定制，经济学核心 8 个期刊
 ├── haihuang.py               # 【个性化子程序】为朋友定制，经济/社会/政治/金融/史 26 个期刊
 ├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/公共/卫生经济学 15 个期刊
-├── seen_articles.json              # 主程序缓存
-├── seen_yifanxu.json               # yifanxu 缓存（首次运行后自动生成）
-├── seen_haihuang.json              # haihuang 缓存（首次运行后自动生成）
-├── seen_jiahuitan.json             # jiahuitan 缓存（首次运行后自动生成）
-├── fail_counts_journal_tracker.json # 主程序 RSS 失败计数（自动生成）
-├── fail_counts_yifanxu.json        # yifanxu RSS 失败计数（自动生成）
-├── fail_counts_haihuang.json       # haihuang RSS 失败计数（自动生成）
-├── fail_counts_jiahuitan.json      # jiahuitan RSS 失败计数（自动生成）
+├── state/                    # GitHub Actions 维护的缓存和失败计数
+│   ├── seen_articles.json
+│   ├── seen_yifanxu.json
+│   ├── seen_haihuang.json
+│   ├── seen_jiahuitan.json
+│   ├── fail_counts_journal_tracker.json
+│   ├── fail_counts_yifanxu.json
+│   ├── fail_counts_haihuang.json
+│   └── fail_counts_jiahuitan.json
 ├── requirements.txt
 ├── NOTES.md                   # 本地进度文档（不同步 GitHub）
 ├── .github/workflows/
@@ -54,7 +55,7 @@ journal-tracker/
 - 主程序（`journal_tracker.py`）覆盖核心期刊；子程序为朋友个性化定制，期刊范围可与主程序重叠
 - 邮件标题格式：`第N期 · Journal Weekly Digest · {total} new articles — {week_str}`；测试模式：`测试 · 第N期 · Journal Weekly Digest · ...`；期号由 `START_DATE = date(2026, 3, 30)` 与当前日期计算得出
 - 环境变量统一从 `os.environ` 读取，不硬编码敏感信息
-- 缓存文件名与脚本对应（`seen_<scriptname>.json`、`fail_counts_<scriptname>.json`），不交叉引用
+- 缓存文件统一放在 `state/`，文件名与脚本对应（`seen_<scriptname>.json`、`fail_counts_<scriptname>.json`），不交叉引用
 - 新增子程序时，参照现有子程序结构，并在 `weekly_digest.yml` 追加对应 step（含 `EMAIL_ALERT` 环境变量）
 - RSS 失效检测：每个脚本独立维护 `fail_counts_*.json`，连续失败达 5 次时向 `EMAIL_ALERT` 发送告警；测试模式不触发告警、不更新计数
 
@@ -96,25 +97,25 @@ journal-tracker/
 
 ## 本地开发注意事项
 
-缓存文件（`seen_*.json`、`fail_counts_*.json`）必须保留在远端仓库供 GitHub Actions 使用，但本地无需同步。已对这些文件执行：
+缓存文件（`state/seen_*.json`、`state/fail_counts_*.json`）必须保留在远端仓库供 GitHub Actions 使用，但本地无需同步。已对这些文件执行：
 
 ```bash
-git update-index --skip-worktree seen_articles.json seen_yifanxu.json seen_haihuang.json seen_jiahuitan.json fail_counts_journal_tracker.json fail_counts_yifanxu.json fail_counts_haihuang.json fail_counts_jiahuitan.json
+git update-index --skip-worktree state/seen_articles.json state/seen_yifanxu.json state/seen_haihuang.json state/seen_jiahuitan.json state/fail_counts_journal_tracker.json state/fail_counts_yifanxu.json state/fail_counts_haihuang.json state/fail_counts_jiahuitan.json
 ```
 
 新克隆仓库后需重新执行上述命令，否则这些文件会出现在 `git status` 中。
 
 ## 缓存状态管理
 
-**重要**：本地 `seen_*.json` 因 `skip-worktree` 不跟踪 GitHub Actions 的写入，本地文件是陈旧的。调试时始终查远端：
+**重要**：本地 `state/seen_*.json` 因 `skip-worktree` 不跟踪 GitHub Actions 的写入，本地文件是陈旧的。调试时始终查远端：
 
 ```bash
 # 查看远端缓存（不影响本地文件）
 git fetch origin
-git show origin/main:seen_articles.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d),'entries')"
+git show origin/main:state/seen_articles.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d),'entries')"
 
 # 检查某个 DOI 是否已发送
-git show origin/main:seen_articles.json | python3 -c "
+git show origin/main:state/seen_articles.json | python3 -c "
 import json,sys,urllib.parse
 seen = set(json.load(sys.stdin))
 doi = '10.1086/739323'  # 替换为要查的 DOI
@@ -137,7 +138,7 @@ req = urllib.request.Request(url, headers={'User-Agent': 'journal-tracker/1.0'})
 items = json.loads(urllib.request.urlopen(req, timeout=15).read())['message']['items']
 
 seen = set()
-for fname in ['seen_articles.json','seen_yifanxu.json','seen_haihuang.json','seen_jiahuitan.json']:
+for fname in ['state/seen_articles.json','state/seen_yifanxu.json','state/seen_haihuang.json','state/seen_jiahuitan.json']:
     r = subprocess.run(['git','show',f'origin/main:{fname}'], capture_output=True, text=True)
     if r.returncode == 0: seen |= set(json.loads(r.stdout))
 

@@ -4,6 +4,14 @@
 
 ## 2026-04-20
 
+### 移动缓存文件到 state 目录
+
+仓库根目录原先同时放置脚本、文档、缓存和失败计数文件。随着四个追踪脚本稳定运行，`seen_*.json` 和 `fail_counts_*.json` 一共占据 8 个顶层文件，GitHub 首页显得杂乱，也不利于区分“人工维护文件”和“自动运行状态”。
+
+本次新增 `state/` 目录，并将所有缓存和失败计数 JSON 移入其中。四个脚本的 `SEEN_FILE` 和 `FAIL_COUNTS_FILE` 改为从脚本所在目录定位到 `state/`，GitHub Actions 的缓存提交步骤也改为 `git add state/*.json`。
+
+这次没有移动四个 `.py` 脚本，避免同时改动运行入口和状态路径。根目录保留 README、CHANGELOG、CLAUDE、requirements 和四个脚本，结构已经比之前清爽，运行方式仍然不变。
+
 ### 扩充维护记录
 
 此前 README 只说明当前用法，较难看出项目为什么会有 CrossRef、OpenAlex、RSS 元数据过滤等特殊逻辑。本次新增并扩充 `CHANGELOG.md`，README 只保留简短更新入口，完整背景集中放在这里，方便以后排查类似问题。

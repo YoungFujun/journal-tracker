@@ -48,8 +48,9 @@ CROSSREF_JOURNALS = [
 ]
 
 # ── 配置（从环境变量/GitHub Secrets读取）────────────────────────────────────
-SEEN_FILE        = Path("seen_articles.json")
-FAIL_COUNTS_FILE = Path("fail_counts_journal_tracker.json")
+STATE_DIR        = Path(__file__).resolve().parent / "state"
+SEEN_FILE        = STATE_DIR / "seen_articles.json"
+FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_journal_tracker.json"
 SMTP_HOST        = "smtp.163.com"
 SMTP_PORT        = 465
 SENDER           = os.environ["EMAIL_SENDER"]
