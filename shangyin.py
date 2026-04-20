@@ -342,7 +342,9 @@ def fetch_crossref(seen: set) -> tuple:
                 abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
                 pd = item.get("published", {}).get("date-parts", [[]])[0]
                 pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
-                if len(pd) >= 2:
+                if len(pd) >= 3:
+                    date_display = pub_str  # 有精确日期，直接用 YYYY-MM-DD
+                elif len(pd) == 2:
                     try:
                         date_display = datetime(pd[0], pd[1], 1).strftime("%B %Y")
                     except (ValueError, TypeError):
