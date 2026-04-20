@@ -211,6 +211,8 @@ def _is_real_abstract(text: str) -> bool:
         return False
     if text.startswith("Publication date:"):
         return False
+    if re.match(r"^Proceedings of the National Academy of Sciences,\s+Volume\s+\d+,\s+Issue\s+\d+", text):
+        return False
     if len(text) < 100:
         return False
     if re.search(r'\b(EarlyView|Ahead of Print)\b', text):
