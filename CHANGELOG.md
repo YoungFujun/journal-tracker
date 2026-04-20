@@ -1,75 +1,142 @@
 # Changelog
 
-本文件记录项目的主要维护变更。日常缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
+本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
 ## 2026-04-20
 
-### 修正 PNAS RSS 元数据误判
+### 扩充维护记录
 
-- `haihuang.py` 新增 PNAS 卷期元数据识别规则。
-- 以 `Proceedings of the National Academy of Sciences, Volume ..., Issue ...` 开头的 RSS summary 不再作为真实摘要展示。
-- 这类文章会优先通过 OpenAlex DOI 精确查询补摘要；若补不到，则归入无摘要组。
+此前 README 只说明当前用法，较难看出项目为什么会有 CrossRef、OpenAlex、RSS 元数据过滤等特殊逻辑。本次新增并扩充 `CHANGELOG.md`，README 只保留简短更新入口，完整背景集中放在这里，方便以后排查类似问题。
+
+### 修正 PNAS RSS 元数据误判为摘要
+
+在 `haihuang.py` 的邮件中，PNAS 文章的摘要框里出现了卷号、期号、月份和 Significance 等信息，例如 `Proceedings of the National Academy of Sciences, Volume ..., Issue ...`。根因是 PNAS RSS 把这些内容放在 `summary` 字段里，脚本又直接把 `summary` 当作摘要。
+
+本次调整在 `_is_real_abstract()` 中新增 PNAS 卷期元数据识别规则。命中这类模式时，脚本不再把它当作真实摘要展示，而是清空后尝试通过 OpenAlex DOI 精确查询补摘要。如果 OpenAlex 没有返回摘要，文章会进入无摘要组，避免把元数据显示在灰色摘要框里。
+
+本次只处理 PNAS 摘要误判，没有同步清洗 PNAS 作者字段。截图中作者和机构粘连的问题属于另一个 RSS 解析问题，后续可单独处理。
 
 ## 2026-04-13
 
-### 扩大抓取窗口并修正数据源
+### 抓取窗口从 7 天扩展为 21 天
 
-- 抓取窗口从 7 天扩展为 21 天，降低出版商 RSS 时间戳滞后导致漏文的风险。
-- 将 OUP 期刊（QJE、RES、RFS）迁到 CrossRef，避开静态当期 RSS 的日期问题。
-- 将 AJS、SMR 等不适合继续依赖 RSS 的期刊迁到 CrossRef。
-- 修复 Wiley 链接中的 `?af=R` 变体，减少同一文章因链接形式不同而重复发送。
+早期脚本只抓取最近 7 天文章。实际运行后发现，部分出版社的 RSS 发布时间和文章正式发表时间存在滞后，尤其是期刊 feed 更新不稳定时，7 天窗口容易漏掉刚进入 feed 但发布日期较早的文章。
+
+本次将四个脚本的时间窗口统一扩展到 21 天。脚本仍然通过 `seen_*.json` 去重，所以窗口变长不会重复推送已发送文章；它主要提高容错能力，覆盖出版商 RSS 时间戳滞后和短期运行失败后的补偿空间。
+
+### 将静态或失效 RSS 迁到 CrossRef
+
+部分期刊不适合继续依赖 RSS：
+
+- OUP 期刊（QJE、RES、RFS）的 RSS 是静态当期 feed。季刊或双月刊的间隔期内，feed 中文章日期可能长期停留在上一期出版日，导致时间窗口无法准确判断“新文章”。
+- AJS 的 Chicago etoc feed 也存在静态当期问题，advance access 文章不会稳定出现在 RSS 中。
+- SMR 的 Sage RSS 曾出现静默失效：请求不报错，但长期只返回旧内容，失败计数无法捕捉这种情况。
+
+本次将这些期刊迁到 CrossRef，通过 ISSN 查询近 21 天发表的文章。这样牺牲了一些 RSS 的实时性，但换来更稳定的日期和 DOI 信息。
+
+### 修复 Wiley 链接去重问题
+
+Wiley feed 中同一篇文章可能带有 `?af=R` 这类链接参数。若缓存中存的是不带参数的链接，而新抓取结果带参数，脚本可能把同一篇文章识别为新文章。
+
+本次统一去掉文章链接中的 `?af=R`，降低同一文章因 URL 形式不同而重复推送的概率。
 
 ### 一次性补跑与清理
 
-- 新增一次性 catch-up 脚本和 workflow，用于补齐窗口调整后的缓存。
-- 补跑完成后删除临时脚本和 workflow，保留常规每周运行流程。
+由于抓取窗口和数据源都有调整，项目新增了一次性 `catchup.py` 和临时 GitHub Actions workflow，用于补齐迁移后可能遗漏的缓存记录。补跑完成后，临时脚本和 workflow 已删除，只保留常规每周运行流程。
 
 ## 2026-04-07
 
-### 摘要补充逻辑重写
+### 摘要补充从 CrossRef 改为 OpenAlex
 
-- 摘要补充从 CrossRef 改为 OpenAlex API。
-- 仅使用 DOI 精确查询，不再使用标题搜索兜底，避免错误匹配到无关文章摘要。
-- 新增 `_is_real_abstract()`，过滤 RSS 中常见的元数据占位文本。
-- ScienceDirect 期刊因 RSS 无公开 DOI，跳过 OpenAlex 摘要补充，直接按无摘要文章展示。
-- 对 ScienceDirect RSS 的作者和日期做特殊解析，从 summary 元数据中提取 `Author(s):` 和 `Publication date:`。
+最初尝试用 CrossRef 补充摘要，但实际覆盖不稳定。随后改为 OpenAlex API，通过 DOI 查询 `abstract_inverted_index` 并重建摘要文本。四个脚本都同步改造，保证主程序和子追踪器行为一致。
+
+这次改动也修复了 DOI 提取问题：脚本会从 RSS 的 DOI 字段、文章链接或缓存 ID 中提取 `10.xxxx/...` 格式 DOI，再用 DOI 精确查询 OpenAlex。
+
+### 移除标题搜索兜底
+
+早期摘要补充逻辑包含标题搜索兜底：如果没有 DOI，就用标题去外部 API 搜索摘要。实际测试中，这种方式可能把经济学文章匹配到无关领域的同名或近似标题文章，造成摘要张冠李戴。
+
+本次移除标题搜索，只保留 DOI 精确查询。结果是摘要覆盖率可能略低，但错误摘要的风险大幅下降。对自动邮件摘要来说，宁可显示无摘要，也不应显示错摘要。
+
+### 过滤 RSS 元数据占位摘要
+
+一些 RSS 源的 `summary` 字段不是摘要，而是卷期、页码、EarlyView、Ahead of Print 或出版日期等元数据。此前脚本会把这些文本放进摘要框，影响阅读。
+
+本次新增 `_is_real_abstract()`，先判断 `summary` 是否像真实摘要。若文本为空、过短，或明显是 `Publication date:`、`EarlyView`、`Ahead of Print` 等占位内容，就不当作摘要展示，并进入 OpenAlex 补摘要流程。
+
+### ScienceDirect 特殊处理
+
+ScienceDirect RSS 对若干 Elsevier 期刊只提供 PII 链接，不提供公开 DOI。它的 `summary` 字段也常常是元数据，不是真摘要。脚本因此跳过 ScienceDirect 文章的 OpenAlex 摘要补充，避免用错误 DOI 或标题搜索造成错配。
+
+同时，ScienceDirect 的作者和发布日期常藏在 summary 元数据中。本次新增正则解析，从 `Author(s):` 和 `Publication date:` 中提取作者和日期。这样即使没有摘要，邮件仍能显示更完整的基础信息。
 
 ### 邮件布局重构
 
-- 每个期刊内按摘要状态分组：有摘要文章排前，无摘要文章排后。
-- 有摘要文章使用灰色摘要框展示。
-- 无摘要文章前显示统一提示，引导读者点击标题查看全文。
-- 调整期刊标题栏样式，提高邮件可读性。
+邮件原先把所有文章按期刊列出，摘要质量参差不齐时阅读体验不稳定。本次改为每个期刊内部分两组：
+
+- 有真实摘要的文章排前，摘要放入灰色框。
+- 无摘要文章排后，并在组前显示提示，说明需要点击标题查看全文。
+
+这次也去掉了摘要框中的 `Abstract ▸` 标签，调整期刊标题栏样式，让每个期刊分区更醒目。
+
+## 2026-04-06
+
+### 定时运行方式短暂调整后恢复
+
+曾短暂移除 GitHub Actions 的 schedule 触发，尝试使用外部 cron 控制定时运行。随后恢复仓库内置 schedule，让项目继续保持“Fork 后只靠 GitHub Actions 自动运行”的使用方式。
 
 ## 2026-03-30
 
-### 子追踪器和手动运行
+### 新增个性化子追踪器
 
-- 新增 `yifanxu.py`、`haihuang.py`、`jiahuitan.py` 三个个性化子追踪器。
-- GitHub Actions 支持手动触发时选择运行某个脚本，便于测试和补发。
-- 各脚本独立维护收件人、缓存文件和失败计数文件。
+项目最初只有主程序。随后新增三个独立子追踪器：
 
-### 期刊范围调整
+- `yifanxu.py`：聚焦经济学核心期刊。
+- `haihuang.py`：覆盖经济、社会、政治、金融和经济史方向。
+- `jiahuitan.py`：面向经济、公共和卫生经济学方向。
 
-- 主程序 `journal_tracker.py` 从 19 个期刊调整为 16 个期刊。
-- `jiahuitan.py` 修正为经济、公共和卫生经济学方向。
-- `haihuang.py` 保留更宽的经济、社会、政治、金融和经济史覆盖范围。
+这些脚本保持独立维护，不共享代码。每个脚本有自己的收件人环境变量、缓存文件和失败计数文件，方便不同收件人定制期刊范围，也避免一个脚本的状态影响另一个脚本。
 
-### 邮件标题和缓存管理
+### 支持手动选择运行脚本
 
-- 邮件标题加入自动递增期号，如 `第N期 · Journal Weekly Digest`。
-- 远端缓存文件由 GitHub Actions 自动提交维护。
-- 本地缓存文件设置为 `skip-worktree`，避免本地陈旧缓存干扰开发。
+GitHub Actions 的 `workflow_dispatch` 增加了布尔开关。手动触发时，可以只运行主程序或某个子程序，适合测试单个收件人、补发某个版本，或排查某个脚本的问题。定时触发时，四个脚本仍按常规一起运行。
 
-### RSS 失效告警
+### 修正 jiahuitan 期刊范围
 
-- 四个脚本加入 RSS/CrossRef 连续失败计数。
-- 某期刊连续失败达到 5 次时，向 `EMAIL_ALERT` 发送告警邮件。
+`jiahuitan.py` 曾包含一些金融、政治学和经济史期刊。后来根据定位调整为经济、公共和卫生经济学方向：删除不匹配的期刊，新增 Journal of Health Economics、Health Economics、Social Science & Medicine 等期刊，并同步修正文档中的领域说明。
+
+### 调整主程序期刊范围
+
+主程序 `journal_tracker.py` 从 19 个期刊调整为 16 个期刊。Labour Economics、American Journal of Political Science、PNAS 等不再放在主程序中，主程序更集中于经济学、金融和经济史核心期刊；更宽的跨学科覆盖留给 `haihuang.py`。
+
+### 显示完整摘要
+
+早期邮件会截断摘要，只显示前 300 个字符。后来四个脚本都移除截断限制，RSS 或 CrossRef/OpenAlex 能提供完整摘要时，邮件直接展示完整文本，减少读者反复点击原文页面的次数。
+
+### 邮件标题加入期号
+
+四个脚本新增 `START_DATE = date(2026, 3, 30)`，用发送日期计算第几期。正式邮件标题采用 `第N期 · Journal Weekly Digest · ...` 格式，测试邮件标题加 `测试` 前缀，便于在邮箱中区分正式推送和测试推送。
+
+### 本地缓存文件处理
+
+远端 GitHub Actions 每次运行后会更新 `seen_*.json` 和 `fail_counts_*.json` 并提交回仓库。本地开发时，这些文件可能长期落后于远端，容易造成 `git status` 噪音或误判缓存状态。
+
+本次对缓存文件执行 `git update-index --skip-worktree`。本地不再追踪这些文件的日常变化；需要核查真实缓存时，应查看 `origin/main` 中的文件，而不是依赖本地副本。
+
+### RSS 失败告警
+
+四个脚本加入 `fail_counts_*.json`。某个期刊抓取成功时计数归零，抓取失败时计数加 1。连续失败达到 5 次时，脚本会向 `EMAIL_ALERT` 发送告警邮件，列出期刊名、失败次数和错误信息。
+
+这个机制主要覆盖 RSS URL 失效、网络错误、API 错误等显性失败。对于“请求成功但内容长期不更新”的静默失效，仍需结合人工检查或迁移到 CrossRef。
+
+### 主题筛选高亮草案
+
+README 和本地记录中加入了主题筛选高亮的设计草案。设想是在每个脚本中配置关键词组，先把命中特定主题的文章放到邮件顶部，再显示普通期刊分区。该功能还未实现，只作为后续方向保留。
 
 ## 2026-03-29
 
 ### 项目初始化
 
-- 建立主追踪器 `journal_tracker.py`。
-- 部署 GitHub Actions，每周一北京时间 09:00 自动运行。
-- 通过 163 SMTP 发送期刊更新邮件。
+项目初始化时建立 `journal_tracker.py`，通过 GitHub Actions 每周一北京时间 09:00 自动运行。脚本从 RSS 和 CrossRef 抓取新文章，生成 HTML 邮件，并通过 163 SMTP 发送。
+
+初始版本已经包含去重缓存：每次发送后把文章 ID 写入 `seen_articles.json`，下次运行只推送缓存中没有出现过的新文章。这是后续多脚本、多收件人和补跑机制的基础。
