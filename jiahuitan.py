@@ -312,11 +312,11 @@ def build_html(articles: dict, week_str: str) -> str:
 
         journal_name = _html_text(journal)
         sections += f"""
-        <div style="margin:34px 0 8px 0;">
-          <h2 style="font-size:14px; color:#607d8b; letter-spacing:2px; text-transform:uppercase;
-                     border-bottom:1px solid #d1d5db; padding:0 0 8px 0;
-                     margin:0 0 16px 0; font-weight:700;">{journal_name}
-            <span style="font-weight:400; font-size:13px; color:#6b7280; letter-spacing:0; text-transform:none;">({len(items)} articles)</span>
+        <div style="margin:42px 0 12px 0;">
+          <h2 style="font-size:18px; color:#1f2937; letter-spacing:1px; text-transform:uppercase;
+                     border-top:2px solid #111827; border-bottom:1px solid #d1d5db; padding:12px 0 10px 0;
+                     margin:0 0 18px 0; font-weight:800;">{journal_name}
+            <span style="font-weight:400; font-size:14px; color:#6b7280; letter-spacing:0; text-transform:none;">({len(items)} articles)</span>
           </h2>
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
         </div>"""
