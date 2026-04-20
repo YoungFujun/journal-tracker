@@ -341,7 +341,7 @@ def build_html(articles: dict, week_str: str) -> str:
                     </td>
                   </tr>
                 </table>
-                {"<div style='font-size:15px; color:#374151; font-style:italic; line-height:1.45; margin:8px 0 0 30px;'>" + authors + "</div>" if authors else ""}
+                {"<div style='font-size:15px; color:#1f2937; font-weight:500; line-height:1.45; margin:9px 0 0 30px;'>" + authors + "</div>" if authors else ""}
                 <div style="font-size:14px; color:#6b7280; margin:7px 0 0 30px;">
                   {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
                 </div>
