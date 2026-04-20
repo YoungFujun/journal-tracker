@@ -52,6 +52,7 @@ CROSSREF_JOURNALS = [
 STATE_DIR        = Path(__file__).resolve().parent / "state"
 SEEN_FILE        = STATE_DIR / "seen_articles.json"
 FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_journal_tracker.json"
+LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_journal_tracker.json"
 SMTP_HOST        = "smtp.163.com"
 SMTP_PORT        = 465
 SENDER           = os.environ["EMAIL_SENDER"]
@@ -84,6 +85,53 @@ def load_fail_counts() -> dict:
 
 def save_fail_counts(counts: dict):
     FAIL_COUNTS_FILE.write_text(json.dumps(counts, indent=2, ensure_ascii=False))
+
+
+def load_journal_watermarks() -> dict:
+    if LAST_SEEN_BY_JOURNAL_FILE.exists():
+        return json.loads(LAST_SEEN_BY_JOURNAL_FILE.read_text())
+    return {}
+
+
+def save_journal_watermarks(data: dict):
+    LAST_SEEN_BY_JOURNAL_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def _max_date_in_items(items: list) -> str:
+    max_date = ""
+    for a in items:
+        m = re.search(r"\b\d{4}-\d{2}-\d{2}\b", a.get("date", ""))
+        if m:
+            d = m.group(0)
+            if d > max_date:
+                max_date = d
+    return max_date
+
+
+def update_journal_watermarks(articles: dict):
+    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    all_names = [n for n, _ in JOURNALS] + [n for n, _ in CROSSREF_JOURNALS]
+    crossref_names = {n for n, _ in CROSSREF_JOURNALS}
+    watermarks = load_journal_watermarks()
+
+    for name in all_names:
+        prev = watermarks.get(name, {})
+        new_items = articles.get(name, [])
+        new_count = len(new_items)
+        max_date = prev.get("last_article_date", "")
+        if new_count > 0:
+            run_max = _max_date_in_items(new_items)
+            if run_max and run_max > max_date:
+                max_date = run_max
+        watermarks[name] = {
+            "source": "crossref" if name in crossref_names else "rss",
+            "last_run_utc": now_utc,
+            "new_count": new_count,
+            "last_article_date": max_date,
+            "last_updated_run_utc": now_utc if new_count > 0 else prev.get("last_updated_run_utc", ""),
+        }
+
+    save_journal_watermarks(watermarks)
 
 
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
@@ -452,6 +500,8 @@ def main():
 
     total = sum(len(v) for v in new_articles.values())
     print(f"New articles found: {total}")
+    if not TEST_MODE:
+        update_journal_watermarks(new_articles)
     if total == 0:
         print("Nothing new this week, skipping email.")
         return

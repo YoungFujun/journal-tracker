@@ -72,6 +72,7 @@ CROSSREF_JOURNALS = [
 STATE_DIR        = Path(__file__).resolve().parent / "state"
 SEEN_FILE        = STATE_DIR / "seen_haihuang.json"
 FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_haihuang.json"
+LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_haihuang.json"
 SMTP_HOST        = "smtp.163.com"
 SMTP_PORT        = 465
 SENDER           = os.environ["EMAIL_SENDER"]
@@ -106,6 +107,82 @@ def save_fail_counts(counts: dict):
     FAIL_COUNTS_FILE.write_text(json.dumps(counts, indent=2, ensure_ascii=False))
 
 
+def load_journal_watermarks() -> dict:
+    if LAST_SEEN_BY_JOURNAL_FILE.exists():
+        return json.loads(LAST_SEEN_BY_JOURNAL_FILE.read_text())
+    return {}
+
+
+def save_journal_watermarks(data: dict):
+    LAST_SEEN_BY_JOURNAL_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def _max_date_in_items(items: list) -> str:
+    max_date = ""
+    for a in items:
+        m = re.search(r"\b\d{4}-\d{2}-\d{2}\b", a.get("date", ""))
+        if m:
+            d = m.group(0)
+            if d > max_date:
+                max_date = d
+    return max_date
+
+
+def update_journal_watermarks(articles: dict):
+    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    all_names = [n for n, _ in JOURNALS] + [n for n, _ in CROSSREF_JOURNALS]
+    crossref_names = {n for n, _ in CROSSREF_JOURNALS}
+    watermarks = load_journal_watermarks()
+
+    for name in all_names:
+        prev = watermarks.get(name, {})
+        new_items = articles.get(name, [])
+        new_count = len(new_items)
+        max_date = prev.get("last_article_date", "")
+        if new_count > 0:
+            run_max = _max_date_in_items(new_items)
+            if run_max and run_max > max_date:
+                max_date = run_max
+        watermarks[name] = {
+            "source": "crossref" if name in crossref_names else "rss",
+            "last_run_utc": now_utc,
+            "new_count": new_count,
+            "last_article_date": max_date,
+            "last_updated_run_utc": now_utc if new_count > 0 else prev.get("last_updated_run_utc", ""),
+        }
+
+    save_journal_watermarks(watermarks)
+
+
+def _clean_pnas_authors(text: str) -> str:
+    """清洗 PNAS RSS 中作者与机构粘连字段，仅保留作者部分。"""
+    if not text:
+        return ""
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    cleaned = re.sub(r"^By\s+", "", cleaned, flags=re.IGNORECASE)
+
+    # 明确的元数据/机构区块起点
+    for pat in (
+        r"\bAuthor affiliations?\b.*$",
+        r"\bAffiliations?\b.*$",
+        r"\bContributed by\b.*$",
+        r"\bEdited by\b.*$",
+        r"\bCompeting interest\b.*$",
+    ):
+        cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE).strip()
+
+    # 若作者后直接拼接机构信息，遇到常见机构关键词时截断
+    m = re.search(
+        r"(?i)(?:^|[;|.,])\s*(Department of|School of|College of|"
+        r"University of|Institute of|Hospital|Center for|Laboratory|Academy of)\b",
+        cleaned,
+    )
+    if m and m.start() > 0:
+        cleaned = cleaned[:m.start()].rstrip(" ,;|.")
+
+    return cleaned
+
+
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
 def fetch_rss(seen: set) -> tuple:
     results, errors = {}, {}
@@ -128,6 +205,8 @@ def fetch_rss(seen: set) -> tuple:
                     authors = ", ".join(a.get("name", "") for a in entry.authors)
                 elif hasattr(entry, "author"):
                     authors = entry.author
+                if name == "Proceedings of the National Academy of Sciences":
+                    authors = _clean_pnas_authors(authors)
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
                 # ScienceDirect RSS 不含标准作者/日期字段，从 summary 元数据中提取
                 if "sciencedirect.com" in entry.get("link", ""):
@@ -479,6 +558,8 @@ def main():
 
     total = sum(len(v) for v in articles.values())
     print(f"本次获取文章: {total} 篇（共 {len(articles)} 个期刊有更新）")
+    if not TEST_MODE:
+        update_journal_watermarks(articles)
 
     if total == 0:
         print("无新内容，跳过发送。")

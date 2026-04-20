@@ -28,7 +28,19 @@
 
 本次调整在 `_is_real_abstract()` 中新增 PNAS 卷期元数据识别规则。命中这类模式时，脚本不再把它当作真实摘要展示，而是清空后尝试通过 OpenAlex DOI 精确查询补摘要。如果 OpenAlex 没有返回摘要，文章会进入无摘要组，避免把元数据显示在灰色摘要框里。
 
-本次只处理 PNAS 摘要误判，没有同步清洗 PNAS 作者字段。截图中作者和机构粘连的问题属于另一个 RSS 解析问题，后续可单独处理。
+后续维护已在 `haihuang.py` 的 RSS 解析中补充 PNAS 作者字段清洗：当作者字符串中混入 `Author affiliations`、`Affiliations`、`Contributed by` 等机构元数据时，脚本会截断并仅保留作者部分，避免邮件里出现作者与机构粘连。
+
+### 新增四个脚本的按期刊抓取水位文件
+
+为 `journal_tracker.py`、`yifanxu.py`、`haihuang.py`、`jiahuitan.py` 新增 `state/last_seen_by_journal_*.json` 写入逻辑。每次正式运行后，按每个期刊记录：
+
+- `source`：`rss` 或 `crossref`
+- `last_run_utc`：脚本本次运行时间（UTC）
+- `new_count`：该期刊本次新增文章数量
+- `last_article_date`：该期刊已抓取到的最新文章日期（YYYY-MM-DD）
+- `last_updated_run_utc`：该期刊最近一次抓到新文章的运行时间
+
+这样可以直接查看每个期刊“最新覆盖到哪一天”，并区分“本周无更新”和“长期无更新”。
 
 ## 2026-04-13
 
