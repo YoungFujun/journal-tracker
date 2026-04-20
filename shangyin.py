@@ -253,6 +253,7 @@ def fetch_rss(seen: set) -> tuple:
                 elif hasattr(entry, "author"):
                     authors = entry.author
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
+                date_display = pub_str
                 # ScienceDirect RSS 不含标准作者/日期字段，从 summary 元数据中提取
                 if "sciencedirect.com" in entry.get("link", ""):
                     if not authors:
@@ -263,6 +264,7 @@ def fetch_rss(seen: set) -> tuple:
                         m = re.search(r'Publication date:\s*(.+?)Source:', summary)
                         if m:
                             pub_str = m.group(1).strip()
+                            date_display = pub_str  # 保留原始"May 2026"格式
                             date_key = _normalize_date_str(pub_str)
                 if name == "NBER Working Papers (Regional Economics)":
                     if not _is_nber_regional_working_paper(entry, entry.get("title", ""), summary):
@@ -276,19 +278,26 @@ def fetch_rss(seen: set) -> tuple:
                         if not pub_str:
                             pub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                         date_key = _normalize_date_str(pub_str)
+                    # NBER 页面日期为月份粒度（"May 2026"），还原显示格式
+                    try:
+                        dt = datetime.strptime(date_key[:7], "%Y-%m")
+                        date_display = dt.strftime("%B %Y")
+                    except ValueError:
+                        date_display = pub_str
 
                 if not published and not _within_window(date_key, cutoff):
                     continue
 
                 new_items.append({
-                    "title":    nber_title if name == "NBER Working Papers (Regional Economics)" else entry.get("title", "(no title)").strip(),
-                    "link":     entry.get("link", "").replace("?af=R", ""),
-                    "authors":  authors,
-                    "abstract": summary,
-                    "date":     pub_str,
-                    "date_key": date_key,
-                    "uid":      uid,
-                    "doi":      entry.get("prism_doi", ""),
+                    "title":        nber_title if name == "NBER Working Papers (Regional Economics)" else entry.get("title", "(no title)").strip(),
+                    "link":         entry.get("link", "").replace("?af=R", ""),
+                    "authors":      authors,
+                    "abstract":     summary,
+                    "date":         pub_str,
+                    "date_display": date_display,
+                    "date_key":     date_key,
+                    "uid":          uid,
+                    "doi":          entry.get("prism_doi", ""),
                 })
             if new_items:
                 results[name] = new_items
@@ -333,9 +342,17 @@ def fetch_crossref(seen: set) -> tuple:
                 abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
                 pd = item.get("published", {}).get("date-parts", [[]])[0]
                 pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
+                if len(pd) >= 2:
+                    try:
+                        date_display = datetime(pd[0], pd[1], 1).strftime("%B %Y")
+                    except (ValueError, TypeError):
+                        date_display = pub_str
+                else:
+                    date_display = pub_str
                 new_items.append({
                     "title": title, "link": link, "authors": authors,
-                    "abstract": abstract, "date": pub_str, "date_key": pub_str, "uid": uid,
+                    "abstract": abstract, "date": pub_str, "date_display": date_display,
+                    "date_key": pub_str, "uid": uid,
                 })
             if new_items:
                 results[name] = new_items
@@ -458,7 +475,7 @@ def build_html(articles: dict, week_str: str) -> str:
         for a in with_abs + without_abs:
             title = _html_text(a.get("title", "(no title)"))
             link = _html_attr(a.get("link", ""))
-            date = _html_text(a.get("date", ""))
+            date = _html_text(a.get("date_display") or a.get("date", ""))
             authors = _html_text(a.get("authors", ""), max_len=420)
             abstract = _html_text(a.get("abstract", "")) if _is_real_abstract(a.get("abstract", "")) else ""
             rows += f"""
