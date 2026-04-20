@@ -56,6 +56,19 @@ START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期�
 
 TEST_MODE = "--test" in sys.argv
 
+ECON_QUOTES = [
+    ("John Maynard Keynes", "In the long run we are all dead."),
+    ("Milton Friedman", "There is no such thing as a free lunch."),
+    ("Adam Smith", "The division of labor is limited by the extent of the market."),
+    ("Alfred Marshall", "Economics is the study of mankind in the ordinary business of life."),
+    ("Milton Friedman", "Inflation is always and everywhere a monetary phenomenon."),
+    ("John Maynard Keynes", "The ideas of economists are more powerful than is commonly understood."),
+]
+
+
+def quote_for_issue(issue_num: int):
+    return ECON_QUOTES[(issue_num - 1) % len(ECON_QUOTES)]
+
 
 # ── 缓存读写 ──────────────────────────────────────────────────────────────────
 def load_seen() -> set:
@@ -277,21 +290,9 @@ def _html_attr(value: str) -> str:
     return html.escape("" if value is None else str(value), quote=True)
 
 
-def build_html(articles: dict, week_str: str) -> str:
+def build_html(articles: dict, week_str: str, issue_num: int) -> str:
     total = sum(len(v) for v in articles.values())
-    toc_links = []
-    for journal, items in articles.items():
-        journal_name = _html_text(journal)
-        anchor = _html_attr("journal-" + re.sub(r"[^a-z0-9]+", "-", journal.lower()).strip("-"))
-        toc_links.append(
-            f'<td style="width:50%; padding:4px 14px 4px 0; vertical-align:top; font-size:14px; line-height:1.45;">'
-            f'<a href="#{anchor}" style="color:#2563eb; text-decoration:none;">{journal_name}</a>'
-            f' <span style="color:#6b7280;">({len(items)})</span></td>'
-        )
-    toc_rows = ""
-    for i in range(0, len(toc_links), 2):
-        right = toc_links[i + 1] if i + 1 < len(toc_links) else '<td style="width:50%; padding:4px 0;">&nbsp;</td>'
-        toc_rows += f"<tr>{toc_links[i]}{right}</tr>"
+    quote_author, quote_text = quote_for_issue(issue_num)
     sections = ""
     for journal, items in articles.items():
         with_abs    = [a for a in items if _is_real_abstract(a.get("abstract", ""))]
@@ -306,20 +307,16 @@ def build_html(articles: dict, week_str: str) -> str:
             abstract = _html_text(a.get("abstract", "")) if _is_real_abstract(a.get("abstract", "")) else ""
             rows += f"""
             <tr>
+              <td style="width:40px; padding:14px 10px 0 0; vertical-align:top; font-size:17px; line-height:1.35; font-weight:700; color:#374151; white-space:nowrap;">{idx}.</td>
               <td style="padding:14px 0 18px 0; border-bottom:1px solid #e5e7eb; vertical-align:top;">
-                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-                  <tr>
-                    <td style="width:30px; padding:0 10px 0 0; vertical-align:top; font-size:17px; line-height:1.35; font-weight:700; color:#374151; white-space:nowrap;">{idx}.</td>
-                    <td style="padding:0; vertical-align:top; font-size:17px; line-height:1.35; font-weight:700; color:#111827;">
-                      <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
-                    </td>
-                  </tr>
-                </table>
-                {"<div style='font-size:15px; color:#1f2937; font-weight:500; line-height:1.45; margin:9px 0 0 40px;'>" + authors + "</div>" if authors else ""}
-                <div style="font-size:14px; color:#6b7280; margin:7px 0 0 40px;">
+                <div style="font-size:17px; line-height:1.35; font-weight:700; color:#111827;">
+                  <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
+                </div>
+                {"<div style='font-size:15px; color:#1f2937; font-weight:500; line-height:1.45; margin:9px 0 0 0;'>" + authors + "</div>" if authors else ""}
+                <div style="font-size:14px; color:#6b7280; margin:7px 0 0 0;">
                   {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
                 </div>
-                {"<div style='font-size:15px; color:#1f2937; line-height:1.65; margin:10px 0 0 40px;'>" + abstract + "</div>" if abstract else ""}
+                {"<div style='font-size:15px; color:#1f2937; line-height:1.65; margin:10px 0 0 0;'>" + abstract + "</div>" if abstract else ""}
               </td>
             </tr>"""
 
@@ -347,14 +344,11 @@ def build_html(articles: dict, week_str: str) -> str:
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <div style="max-width:760px; margin:0 auto; padding:34px 42px 28px 42px; background:#ffffff;">
-    <div style="background:#f8fafc; border:1px solid #e5e7eb; border-left:5px solid #111827; padding:22px 26px; margin-bottom:24px;">
+    <div style="padding:0 0 26px 0; margin-bottom:34px; border-bottom:1px solid #e5e7eb;">
       <h1 style="color:#111827; margin:0; font-size:26px; line-height:1.25; font-weight:800;">Journal Weekly Digest</h1>
       <p style="color:#4b5563; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals</p>
       <p style="margin:18px 0 0 0; font-size:15px; color:#374151; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
-    </div>
-    <div style="margin:0 0 34px 0; padding:16px 18px; border:1px solid #e5e7eb; background:#ffffff;">
-      <div style="font-size:13px; letter-spacing:1.4px; text-transform:uppercase; font-weight:800; color:#111827; margin-bottom:8px;">Journals in this issue</div>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">{toc_rows}</table>
+      <p style="margin:10px 0 0 0; font-size:14px; color:#6b7280; line-height:1.5;">Economist's line: "{quote_text}" &mdash; {quote_author}</p>
     </div>
     <div>{sections}</div>
     <div style="margin-top:32px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af;">
@@ -476,7 +470,7 @@ def main():
         print("无新内容，跳过发送。")
         return
 
-    html = build_html(articles, week_str)
+    html = build_html(articles, week_str, issue_num)
 
     if TEST_MODE:
         subject = f"测试 · 第{issue_num}期 · Journal Weekly Digest · {total} articles — {week_str}"
