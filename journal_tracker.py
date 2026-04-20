@@ -6,6 +6,7 @@ Journal RSS Tracker
 import os
 import sys
 import json
+import html
 import re
 import time
 import smtplib
@@ -258,6 +259,23 @@ def enrich_abstracts(articles: dict):
 
 
 # ── 构建 HTML ─────────────────────────────────────────────────────────────────
+def _shorten(text: str, max_len: int = 420) -> str:
+    if not text or len(text) <= max_len:
+        return text or ""
+    return text[:max_len].rstrip() + "..."
+
+
+def _html_text(value: str, max_len=None) -> str:
+    text = "" if value is None else str(value)
+    if max_len is not None:
+        text = _shorten(text, max_len)
+    return html.escape(text, quote=False)
+
+
+def _html_attr(value: str) -> str:
+    return html.escape("" if value is None else str(value), quote=True)
+
+
 def build_html(new_articles: dict, week_str: str) -> str:
     total = sum(len(v) for v in new_articles.values())
     sections = ""
@@ -267,16 +285,21 @@ def build_html(new_articles: dict, week_str: str) -> str:
         rows = ""
 
         for a in with_abs:
+            title = _html_text(a.get("title", "(no title)"))
+            link = _html_attr(a.get("link", ""))
+            date = _html_text(a.get("date", ""))
+            authors = _html_text(a.get("authors", ""), max_len=420)
+            abstract = _html_text(a.get("abstract", ""))
             rows += f"""
             <tr>
               <td style="padding:10px 0; border-bottom:1px solid #eee; vertical-align:top;">
                 <div style="font-size:15px; font-weight:600; margin-bottom:4px;">
-                  <a href="{a['link']}" style="color:#1a56db; text-decoration:none;">{a['title']}</a>
+                  <a href="{link}" style="color:#1a56db; text-decoration:none;">{title}</a>
                 </div>
-                {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + a['date'] + "</div>" if a['date'] else ""}
-                {"<div style='font-size:12px; color:#666; margin-bottom:4px;'>" + a['authors'] + "</div>" if a['authors'] else ""}
+                {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + date + "</div>" if date else ""}
+                {"<div style='font-size:12px; color:#666; margin-bottom:4px;'>" + authors + "</div>" if authors else ""}
                 <div style="background:#f1f5f9; border-radius:4px; padding:8px 12px; margin-top:4px;">
-                  <div style="font-size:12px; color:#444; line-height:1.5;">{a['abstract']}</div>
+                  <div style="font-size:13px; color:#444; line-height:1.55;">{abstract}</div>
                 </div>
               </td>
             </tr>"""
@@ -285,26 +308,31 @@ def build_html(new_articles: dict, week_str: str) -> str:
             rows += f"""
             <tr>
               <td style="padding:{'14px' if with_abs else '4px'} 0 6px 0;">
-                <div style="font-size:11px; color:#94a3b8; font-style:italic;">Abstract not provided by RSS feed — click the title to read the full article.</div>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px; font-size:12px; color:#64748b;">Abstract not available from feed. Click titles for full articles.</div>
               </td>
             </tr>"""
             for a in without_abs:
+                title = _html_text(a.get("title", "(no title)"))
+                link = _html_attr(a.get("link", ""))
+                date = _html_text(a.get("date", ""))
+                authors = _html_text(a.get("authors", ""), max_len=420)
                 rows += f"""
             <tr>
               <td style="padding:8px 0; border-bottom:1px solid #eee; vertical-align:top;">
                 <div style="font-size:15px; font-weight:600; margin-bottom:4px;">
-                  <a href="{a['link']}" style="color:#1a56db; text-decoration:none;">{a['title']}</a>
+                  <a href="{link}" style="color:#1a56db; text-decoration:none;">{title}</a>
                 </div>
-                {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + a['date'] + "</div>" if a['date'] else ""}
-                {"<div style='font-size:12px; color:#666;'>" + a['authors'] + "</div>" if a['authors'] else ""}
+                {"<div style='font-size:12px; color:#888; margin-bottom:2px;'>" + date + "</div>" if date else ""}
+                {"<div style='font-size:12px; color:#666;'>" + authors + "</div>" if authors else ""}
               </td>
             </tr>"""
 
+        journal_name = _html_text(journal)
         sections += f"""
         <div style="margin-bottom:28px;">
           <h2 style="font-size:17px; color:#1e293b; background:#f0f4ff;
                      border-left:5px solid #1a56db; padding:10px 14px;
-                     margin:0 0 14px 0; border-radius:0 4px 4px 0;">{journal}
+                     margin:0 0 14px 0; border-radius:0 4px 4px 0;">{journal_name}
             <span style="font-weight:normal; font-size:13px; color:#64748b;">({len(items)} articles)</span>
           </h2>
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
@@ -319,7 +347,7 @@ def build_html(new_articles: dict, week_str: str) -> str:
       <h1 style="color:#fff; margin:0; font-size:20px;">📚 Journal Update Digest</h1>
       <p style="color:#bfdbfe; margin:6px 0 0; font-size:13px;">{week_str} · {total} new articles across {len(new_articles)} journals</p>
     </div>
-    <div style="padding:24px 32px;">{sections}</div>
+    <div style="padding:22px 26px;">{sections}</div>
     <div style="padding:16px 32px; background:#f1f5f9; font-size:11px; color:#94a3b8;">
       Generated by journal-tracker · GitHub Actions
     </div>
