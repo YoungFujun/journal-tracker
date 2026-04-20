@@ -30,6 +30,10 @@ on:
         description: "Run jiahuitan.py"
         type: boolean
         default: true
+      run_shangyin:
+        description: "Run shangyin.py"
+        type: boolean
+        default: true
 
 jobs:
   fetch-and-notify:
@@ -94,6 +98,15 @@ jobs:
           EMAIL_RECIPIENT_JIAHUITAN: ${{ secrets.EMAIL_RECIPIENT_JIAHUITAN }}
           EMAIL_ALERT:               ${{ secrets.EMAIL_ALERT }}
         run: python jiahuitan.py
+
+      - name: Run tracker (shangyin)
+        if: github.event_name == 'schedule' || inputs.run_shangyin == true
+        env:
+          EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT_SHANGYIN: ${{ secrets.EMAIL_RECIPIENT_SHANGYIN }}
+          EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
+        run: python shangyin.py
 
       - name: Commit updated cache files
         run: |

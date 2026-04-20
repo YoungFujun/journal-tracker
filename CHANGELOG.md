@@ -4,6 +4,22 @@
 
 ## 2026-04-20
 
+### 新增 shangyin 子脚本
+
+新增 `shangyin.py`，用于追踪以下来源：
+
+- 经济学 Top5：AER、RESTUD、JPE、Econometrica、QJE
+- `Journal of Urban Economics`
+- NBER 新发 Working Paper 中与区域经济相关的条目（按标题/摘要关键词筛选）
+
+并在 `weekly_digest.yml` 中新增 `run_shangyin` 开关和 `EMAIL_RECIPIENT_SHANGYIN` 环境变量入口，支持每周自动运行与手动单独触发。
+
+后续维护补充了 `shangyin.py` 的两项来源特定解析：
+
+- NBER RSS 将作者拼在标题中（`Title -- by Authors`），脚本会拆分为独立标题和作者字段。
+- NBER RSS 不提供日期字段，脚本会进入论文页面读取 `citation_publication_date` 作为发布日期。
+- Journal of Urban Economics 只提供 `May 2026` 这类月份粒度日期，邮件中保留原始展示文本，同时内部使用 `date_key` 判断 21 天抓取窗口。
+
 ### 重做邮件正文版式
 
 参考 AEA 期刊邮件风格，将正文从带色块的卡片布局改为白底目录式排版：去掉深蓝顶部横幅和浅蓝期刊块，期刊分区改用全大写标题配粗分隔线，文章条目去掉数字序号和条目间分割线，蓝色只保留给 Full article 链接，摘要以普通正文段落展示。抬头区保持简洁，只显示期次统计和阅读说明，下方不加分割线。

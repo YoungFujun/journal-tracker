@@ -36,6 +36,7 @@
 | `yifanxu.py` | 个性化子程序（为朋友定制），聚焦经济学核心期刊 | 8 |
 | `haihuang.py` | 个性化子程序（为朋友定制），覆盖经济/社会/政治/金融/经济史 | 26 |
 | `jiahuitan.py` | 个性化子程序（为朋友定制），覆盖经济/公共/卫生经济学等领域期刊 | 15 |
+| `shangyin.py` | 个性化子程序（为朋友定制），聚焦经济学 Top5 + 城市经济 + NBER 区域经济工作论文 | 7 |
 
 各脚本独立维护缓存文件，互不干扰，每周同时运行。缓存和失败计数文件统一放在 `state/` 目录，由 GitHub Actions 自动更新。子程序作为扩展示例，Fork 后可按需删除或仿照添加。
 
@@ -79,6 +80,7 @@
 | `EMAIL_RECIPIENT_YIFAN` | yifanxu 子程序收件地址 | 使用该子程序时 |
 | `EMAIL_RECIPIENT_HAIHUANG` | haihuang 子程序收件地址 | 使用该子程序时 |
 | `EMAIL_RECIPIENT_JIAHUITAN` | jiahuitan 子程序收件地址 | 使用该子程序时 |
+| `EMAIL_RECIPIENT_SHANGYIN` | shangyin 子程序收件地址（例如 `yinshang@ruc.edu.cn`） | 使用该子程序时 |
 | `EMAIL_ALERT` | RSS 失效告警收件地址 | 启用告警功能时 |
 
 ### 第四步：手动触发一次测试
