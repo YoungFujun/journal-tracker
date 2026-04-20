@@ -1,0 +1,51 @@
+{
+  "Journal of Political Economy": {
+    "source": "rss",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 6,
+    "last_article_date": "2026-04-15",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "Econometrica": {
+    "source": "rss",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 14,
+    "last_article_date": "2026-04-01",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "Journal of Urban Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 15,
+    "last_article_date": "2026-05-31",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "NBER Working Papers (Regional Economics)": {
+    "source": "rss",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 10,
+    "last_article_date": "2026-04-20",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "American Economic Review": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 11,
+    "last_article_date": "2026-04-01",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "The Quarterly Journal of Economics": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 3,
+    "last_article_date": "2026-04-11",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  },
+  "The Review of Economic Studies": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-20T16:12:59Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-20",
+    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+  }
+}
