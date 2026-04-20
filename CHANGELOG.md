@@ -19,7 +19,6 @@
 - NBER RSS 将作者拼在标题中（`Title -- by Authors`），脚本会拆分为独立标题和作者字段。
 - NBER RSS 不提供日期字段，脚本会进入论文页面读取 `citation_publication_date` 作为发布日期。
 - Journal of Urban Economics 只提供 `May 2026` 这类月份粒度日期，邮件中保留原始展示文本，同时内部使用 `date_key` 判断 21 天抓取窗口。
-- 若 `EMAIL_RECIPIENT_SHANGYIN` 尚未配置，脚本默认发送到 `yinshang@ruc.edu.cn`，避免首次运行因空收件人失败。
 
 ### 重做邮件正文版式
 
