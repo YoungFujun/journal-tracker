@@ -284,71 +284,49 @@ def build_html(new_articles: dict, week_str: str) -> str:
         without_abs = [a for a in items if not _is_real_abstract(a.get("abstract", ""))]
         rows = ""
 
-        for a in with_abs:
+        for idx, a in enumerate(with_abs + without_abs, start=1):
             title = _html_text(a.get("title", "(no title)"))
             link = _html_attr(a.get("link", ""))
             date = _html_text(a.get("date", ""))
             authors = _html_text(a.get("authors", ""), max_len=420)
-            abstract = _html_text(a.get("abstract", ""))
+            abstract = _html_text(a.get("abstract", "")) if _is_real_abstract(a.get("abstract", "")) else ""
             rows += f"""
             <tr>
-              <td style="padding:10px 0; border-bottom:1px solid #eee; vertical-align:top;">
-                <div style="font-size:16px; font-weight:600; margin-bottom:4px;">
-                  <a href="{link}" style="color:#1a56db; text-decoration:none;">{title}</a>
+              <td style="padding:14px 0 18px 0; border-bottom:1px solid #e5e7eb; vertical-align:top;">
+                <div style="font-size:17px; line-height:1.35; font-weight:700; color:#111827;">
+                  <span style="display:inline-block; width:30px; color:#374151;">{idx}.</span>
+                  <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
                 </div>
-                {"<div style='font-size:13px; color:#888; margin-bottom:2px;'>" + date + "</div>" if date else ""}
-                {"<div style='font-size:13px; color:#666; margin-bottom:4px;'>" + authors + "</div>" if authors else ""}
-                <div style="background:#f1f5f9; border-radius:4px; padding:10px 12px; margin-top:5px;">
-                  <div style="font-size:14px; color:#444; line-height:1.6;">{abstract}</div>
+                {"<div style='font-size:15px; color:#374151; font-style:italic; line-height:1.45; margin:8px 0 0 30px;'>" + authors + "</div>" if authors else ""}
+                <div style="font-size:14px; color:#6b7280; margin:7px 0 0 30px;">
+                  {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
                 </div>
-              </td>
-            </tr>"""
-
-        if without_abs:
-            rows += f"""
-            <tr>
-              <td style="padding:{'14px' if with_abs else '4px'} 0 6px 0;">
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px; font-size:13px; color:#64748b;">Abstract not available from feed. Click titles for full articles.</div>
-              </td>
-            </tr>"""
-            for a in without_abs:
-                title = _html_text(a.get("title", "(no title)"))
-                link = _html_attr(a.get("link", ""))
-                date = _html_text(a.get("date", ""))
-                authors = _html_text(a.get("authors", ""), max_len=420)
-                rows += f"""
-            <tr>
-              <td style="padding:8px 0; border-bottom:1px solid #eee; vertical-align:top;">
-                <div style="font-size:16px; font-weight:600; margin-bottom:4px;">
-                  <a href="{link}" style="color:#1a56db; text-decoration:none;">{title}</a>
-                </div>
-                {"<div style='font-size:13px; color:#888; margin-bottom:2px;'>" + date + "</div>" if date else ""}
-                {"<div style='font-size:13px; color:#666;'>" + authors + "</div>" if authors else ""}
+                {"<div style='font-size:15px; color:#1f2937; line-height:1.65; margin:10px 0 0 30px;'>" + abstract + "</div>" if abstract else "<div style='font-size:14px; color:#6b7280; line-height:1.5; margin:10px 0 0 30px;'>Abstract not available from feed.</div>"}
               </td>
             </tr>"""
 
         journal_name = _html_text(journal)
         sections += f"""
-        <div style="margin-bottom:28px;">
-          <h2 style="font-size:18px; color:#1e293b; background:#f0f4ff;
-                     border-left:5px solid #1a56db; padding:10px 14px;
-                     margin:0 0 14px 0; border-radius:0 4px 4px 0;">{journal_name}
-            <span style="font-weight:normal; font-size:14px; color:#64748b;">({len(items)} articles)</span>
+        <div style="margin:34px 0 8px 0;">
+          <h2 style="font-size:14px; color:#607d8b; letter-spacing:2px; text-transform:uppercase;
+                     border-bottom:1px solid #d1d5db; padding:0 0 8px 0;
+                     margin:0 0 16px 0; font-weight:700;">{journal_name}
+            <span style="font-weight:400; font-size:13px; color:#6b7280; letter-spacing:0; text-transform:none;">({len(items)} articles)</span>
           </h2>
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
         </div>"""
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
-<body style="margin:0; padding:0; background:#f8fafc; font-family: -apple-system, Arial, sans-serif;">
-  <div style="max-width:700px; margin:24px auto; background:#fff;
-              border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.08);">
-    <div style="background:#1a56db; padding:24px 32px;">
-      <h1 style="color:#fff; margin:0; font-size:21px;">📚 Journal Update Digest</h1>
-      <p style="color:#bfdbfe; margin:6px 0 0; font-size:14px;">{week_str} · {total} new articles across {len(new_articles)} journals</p>
+<body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+  <div style="max-width:760px; margin:0 auto; padding:34px 42px 28px 42px; background:#ffffff;">
+    <div style="border-bottom:1px solid #e5e7eb; padding-bottom:18px;">
+      <h1 style="color:#111827; margin:0; font-size:25px; line-height:1.25; font-weight:700;">Journal Weekly Digest</h1>
+      <p style="color:#6b7280; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(new_articles)} journals</p>
     </div>
-    <div style="padding:24px 28px;">{sections}</div>
-    <div style="padding:16px 32px; background:#f1f5f9; font-size:11px; color:#94a3b8;">
+    <p style="margin:26px 0 0 0; font-size:16px; color:#1f2937; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
+    <div>{sections}</div>
+    <div style="margin-top:32px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af;">
       Generated by journal-tracker · GitHub Actions
     </div>
   </div>
