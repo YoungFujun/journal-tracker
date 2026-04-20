@@ -129,10 +129,20 @@ def update_journal_watermarks(articles: dict):
 def _is_nber_regional_working_paper(entry, title: str, summary: str) -> bool:
     text = f"{title} {summary}".lower()
     keywords = [
-        "region", "regional", "urban", "city", "cities", "metropolitan",
-        "metro", "local", "place", "spatial", "geography", "housing",
-        "neighborhood", "agglomeration", "commuting", "migration",
-        "real estate", "land use",
+        # 城市结构与空间
+        "urban", "city", "cities", "metropolitan", "spatial",
+        "agglomeration", "suburbanization", "sprawl", "density",
+        # 土地与住房
+        "housing", "real estate", "land use", "zoning",
+        "land value", "rent control", "gentrification",
+        # 劳动与人口流动
+        "commuting", "internal migration", "urban wage premium",
+        # 交通
+        "transportation infrastructure", "transit",
+        # 政策
+        "place-based", "local government", "intergovernmental",
+        # 方法/领域词
+        "regional", "economic geography", "quantitative spatial",
     ]
     is_wp = "/papers/w" in entry.get("link", "").lower()
     return is_wp and any(k in text for k in keywords)
