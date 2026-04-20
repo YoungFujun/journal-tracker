@@ -290,10 +290,14 @@ def build_html(articles: dict, week_str: str) -> str:
             rows += f"""
             <tr>
               <td style="padding:14px 0 18px 0; border-bottom:1px solid #e5e7eb; vertical-align:top;">
-                <div style="font-size:17px; line-height:1.35; font-weight:700; color:#111827;">
-                  <span style="display:inline-block; width:30px; color:#374151;">{idx}.</span>
-                  <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td style="width:30px; padding:0 10px 0 0; vertical-align:top; font-size:17px; line-height:1.35; font-weight:700; color:#374151; white-space:nowrap;">{idx}.</td>
+                    <td style="padding:0; vertical-align:top; font-size:17px; line-height:1.35; font-weight:700; color:#111827;">
+                      <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
+                    </td>
+                  </tr>
+                </table>
                 {"<div style='font-size:15px; color:#374151; font-style:italic; line-height:1.45; margin:8px 0 0 30px;'>" + authors + "</div>" if authors else ""}
                 <div style="font-size:14px; color:#6b7280; margin:7px 0 0 30px;">
                   {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
