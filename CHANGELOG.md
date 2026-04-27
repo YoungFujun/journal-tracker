@@ -2,6 +2,24 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-04-27
+
+### 新增最新一期目录追加功能
+
+五大刊（AER、QJE、JPE、Econometrica、REStu）的文章通常先以 advance access 形式单独上线，在正式归入某期时已超出 21 天抓取窗口，无法被常规流程捕捉。为此新增 `fetch_new_issues()`，在每次运行时通过 CrossRef API 检测上述期刊是否发布了新的卷期号；若检测到新期，则拉取该期全部文章并附在邮件末尾，形成"Latest Issue Digest"板块。
+
+该板块不包含摘要，仅列出文章标题、作者和链接，并注明哪些文章曾在此前的每周邮件中出现（"Previously featured"），哪些是首次呈现（"First appearance"）。
+
+状态通过每个脚本独立的 `state/last_seen_issues_<scriptname>.json` 持久化，记录各期刊上次检测到的卷期号，下次运行时以此判断是否有新期上线。以上改动同步应用于主程序（`journal_tracker.py`）及全部四个子脚本（`yifanxu.py`、`shangyin.py`、`haihuang.py`、`jiahuitan.py`）。
+
+实现过程中发现 CrossRef API 不支持 `filter=volume:X,issue:Y` 参数组合（返回 HTTP 400）。解决方案：先不带卷期号过滤地拉取近期文章，再在 Python 端按 `volume` 和 `issue` 字段筛选。同时处理了特殊期号（如 `S1`）无法转为整数的边界情况，以及缓存中混合存储纯 DOI 与完整 URL 格式导致 `previously_sent` 判断失效的问题。
+
+邮件抬头新增提示文字，说明本期有几本期刊发布了最新一期目录，便于读者快速了解当周新期信息。
+
+### 新增 Semantic Scholar 作为摘要补充备选源
+
+JPE 和 Econometrica 的 RSS 摘要字段仅含卷期元数据，OpenAlex 对近期发表文章的覆盖存在延迟（部分文章需数周后才被收录）。本次在 OpenAlex DOI 查询失败后，新增 Semantic Scholar API 作为第二备选源（`https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}?fields=abstract`），无需 API Key，调用间隔 0.5 秒。运行日志新增各来源摘要命中数统计（RSS/CrossRef 自带 / OpenAlex / Semantic Scholar / 无摘要）。以上改动同步应用于全部五个脚本。
+
 ## 2026-04-20
 
 ### 新增 shangyin 子脚本

@@ -411,7 +411,7 @@ def _reconstruct_abstract(inverted_index: dict) -> str:
 
 
 def enrich_abstracts(articles: dict):
-    """对摘要为空的文章通过 OpenAlex DOI 精确查询补充摘要。
+    """对摘要为空的文章依次通过 OpenAlex、Semantic Scholar 补充摘要。
     ScienceDirect 期刊（链接含 sciencedirect.com）无公开 DOI，跳过补充。
     """
     missing = [(j, i) for j, items in articles.items()
@@ -422,18 +422,18 @@ def enrich_abstracts(articles: dict):
         print("  摘要补充：无需补充")
         return
 
-    print(f"  摘要补充：对 {len(missing)} 篇文章查询 OpenAlex...")
+    print(f"  摘要补充：对 {len(missing)} 篇文章查询 OpenAlex + Semantic Scholar...")
     headers = {"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
-    enriched = 0
+    oa_n, ss_n = 0, 0
 
     for journal, idx in missing:
         articles[journal][idx]["abstract"] = ""   # 清除假摘要，避免元数据残留
         a = articles[journal][idx]
         abstract = ""
 
-        # DOI 精确查询
         doi = a.get("doi") or _extract_doi(a["link"]) or _extract_doi(a["uid"])
         if doi:
+            # 第一步：OpenAlex
             try:
                 doi_url = urllib.parse.quote(f"https://doi.org/{doi}", safe="")
                 url = f"https://api.openalex.org/works/{doi_url}?select=abstract_inverted_index"
@@ -447,11 +447,154 @@ def enrich_abstracts(articles: dict):
                 pass
             time.sleep(0.1)
 
+            # 第二步：Semantic Scholar（OpenAlex 未能补充时）
+            if not abstract:
+                try:
+                    url = f"https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}?fields=abstract"
+                    with urllib.request.urlopen(
+                        urllib.request.Request(url, headers=headers), timeout=10
+                    ) as resp:
+                        abstract = json.loads(resp.read()).get("abstract") or ""
+                except Exception:
+                    pass
+                time.sleep(0.5)
+                if abstract:
+                    ss_n += 1
+            else:
+                oa_n += 1
+
         if abstract:
             articles[journal][idx]["abstract"] = abstract
-            enriched += 1
 
-    print(f"  摘要补充完成：{enriched}/{len(missing)} 篇补充成功")
+    still = len(missing) - oa_n - ss_n
+    print(f"  摘要补充完成：{oa_n} 篇来自 OpenAlex，{ss_n} 篇来自 Semantic Scholar，{still} 篇未能补充")
+
+
+# ── Issue 目录追踪 ────────────────────────────────────────────────────────────
+ISSUE_TRACKED_JOURNALS = {
+    "American Economic Review":           "0002-8282",
+    "The Quarterly Journal of Economics": "0033-5533",
+    "The Review of Economic Studies":     "0034-6527",
+    "Journal of Political Economy":       "0022-3808",
+    "Econometrica":                       "0012-9682",
+}
+
+ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_shangyin.json"
+
+_SKIP_TITLE_PATTERNS = re.compile(
+    r'\b(front\s*matter|back\s*matter|backmatter|frontmatter|erratum|corrigendum'
+    r'|turnaround\s*time|recent\s*refer|acknowledgment|election\s*of\s*fellow'
+    r'|annual\s*report|report\s*of\s*the\s*secretary|report\s*of\s*the\s*treasurer)\b',
+    re.IGNORECASE
+)
+
+
+def load_issue_state() -> dict:
+    if ISSUE_STATE_FILE.exists():
+        return json.loads(ISSUE_STATE_FILE.read_text())
+    return {}
+
+
+def save_issue_state(state: dict):
+    ISSUE_STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+
+
+def fetch_new_issues(seen: set) -> tuple:
+    """检测五大刊是否有新 issue 发布，返回 (issue_sections, new_issue_seen, updated_state)。"""
+    all_journal_names = {n for n, _ in JOURNALS} | {n for n, _ in CROSSREF_JOURNALS}
+    tracked = {n: issn for n, issn in ISSUE_TRACKED_JOURNALS.items() if n in all_journal_names}
+
+    state = load_issue_state()
+    headers = {"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
+    issue_sections = {}
+    new_issue_seen = set()
+    updated_state = dict(state)
+
+    for name, issn in tracked.items():
+        try:
+            url = (f"https://api.crossref.org/journals/{issn}/works"
+                   f"?sort=published&order=desc&rows=50"
+                   f"&select=DOI,title,author,abstract,published,volume,issue"
+                   f"&filter=type:journal-article")
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                items = json.loads(resp.read()).get("message", {}).get("items", [])
+
+            latest_vol, latest_iss = None, None
+            for item in items:
+                vol = item.get("volume", "")
+                iss = item.get("issue", "")
+                if vol and iss:
+                    if latest_vol is None:
+                        latest_vol, latest_iss = vol, iss
+                    else:
+                        try:
+                            if (int(vol) > int(latest_vol) or
+                                    (vol == latest_vol and int(iss) > int(latest_iss))):
+                                latest_vol, latest_iss = vol, iss
+                        except ValueError:
+                            pass
+
+            if not latest_vol:
+                print(f"  Issue追踪：{name} 未找到有效 volume/issue，跳过")
+                continue
+
+            issue_key = f"{latest_vol}/{latest_iss}"
+            if issue_key == state.get(name, ""):
+                print(f"  Issue追踪：{name} 无新 issue（当前 {issue_key}）")
+                continue
+
+            print(f"  Issue追踪：{name} 检测到新 issue {issue_key}（上次 {state.get(name,'首次')}）")
+
+            url2 = (f"https://api.crossref.org/journals/{issn}/works"
+                    f"?rows=100"
+                    f"&select=DOI,title,author,abstract,published,URL,volume,issue"
+                    f"&filter=type:journal-article"
+                    f"&sort=published&order=desc")
+            req2 = urllib.request.Request(url2, headers=headers)
+            with urllib.request.urlopen(req2, timeout=15) as resp2:
+                all_items = json.loads(resp2.read()).get("message", {}).get("items", [])
+            issue_items = [
+                i for i in all_items
+                if str(i.get("volume", "")) == latest_vol and str(i.get("issue", "")) == latest_iss
+            ]
+
+            articles_list = []
+            for item in issue_items:
+                title = " ".join(item.get("title", ["(no title)"]))
+                if _SKIP_TITLE_PATTERNS.search(title):
+                    continue
+                doi = item.get("DOI", "")
+                link = item.get("URL") or (f"https://doi.org/{doi}" if doi else "")
+                authors = ", ".join(
+                    f"{a.get('given','')} {a.get('family','')}".strip()
+                    for a in item.get("author", [])[:5]
+                )
+                pd = item.get("published", {}).get("date-parts", [[]])[0]
+                pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
+                doi_lower = doi.lower()
+                previously_sent = (
+                    doi in seen or doi_lower in seen or
+                    any(doi_lower in s.lower() for s in seen if doi_lower)
+                )
+                if not previously_sent and doi:
+                    new_issue_seen.add(doi)
+                articles_list.append({
+                    "title": title, "link": link, "authors": authors,
+                    "date": pub_str, "doi": doi, "previously_sent": previously_sent,
+                })
+
+            if articles_list:
+                issue_sections[name] = {
+                    "volume": latest_vol, "issue": latest_iss,
+                    "articles": articles_list,
+                }
+                updated_state[name] = issue_key
+
+        except Exception as e:
+            print(f"  Issue追踪：{name} 查询失败 — {e}")
+
+    return issue_sections, new_issue_seen, updated_state
 
 
 # ── 构建 HTML ─────────────────────────────────────────────────────────────────
@@ -476,7 +619,7 @@ def _html_attr(value: str) -> str:
     return html.escape("" if value is None else str(value), quote=True)
 
 
-def build_html(articles: dict, week_str: str) -> str:
+def build_html(articles: dict, week_str: str, issue_sections: dict = None) -> str:
     total = sum(len(v) for v in articles.values())
     sections = ""
     for journal, items in articles.items():
@@ -524,16 +667,86 @@ def build_html(articles: dict, week_str: str) -> str:
           <table width="100%" cellpadding="0" cellspacing="0">{rows}</table>
         </div>"""
 
+    # ── Latest Issue Digest 区块 ──────────────────────────────────────────────
+    issue_html = ""
+    if issue_sections:
+        issue_blocks = ""
+        for jname, info in issue_sections.items():
+            vol, iss = info["volume"], info["issue"]
+            jname_esc = _html_text(jname)
+            rows_i = ""
+            for a in info["articles"]:
+                title   = _html_text(a.get("title", "(no title)"))
+                link    = _html_attr(a.get("link", ""))
+                authors = _html_text(a.get("authors", ""), max_len=300)
+                date    = _html_text(a.get("date", ""))
+                if a.get("previously_sent"):
+                    rows_i += f"""
+            <tr>
+              <td style="padding:10px 0 14px 0; vertical-align:top; color:#6b7280;">
+                <span style="font-size:13px; margin-right:6px;">○</span>
+                <span style="font-size:16px; font-weight:600;">
+                  <a href="{link}" style="color:#6b7280; text-decoration:none;">{title}</a>
+                </span>
+                {"<div style='font-size:14px; margin:5px 0 0 20px;'>" + authors + "</div>" if authors else ""}
+                <div style="font-size:13px; margin:4px 0 0 20px;">
+                  {date + " | " if date else ""}<a href="{link}" style="color:#9ca3af; text-decoration:underline;">Full article</a>
+                  <span style="margin-left:8px; font-style:italic;">Appeared in a previous digest</span>
+                </div>
+              </td>
+            </tr>"""
+                else:
+                    rows_i += f"""
+            <tr>
+              <td style="padding:10px 0 14px 0; vertical-align:top;">
+                <span style="font-size:13px; margin-right:6px; color:#2563eb;">●</span>
+                <span style="font-size:16px; font-weight:700; color:#111827;">
+                  <a href="{link}" style="color:#111827; text-decoration:none;">{title}</a>
+                </span>
+                {"<div style='font-size:14px; color:#1f2937; font-weight:500; margin:5px 0 0 20px;'>" + authors + "</div>" if authors else ""}
+                <div style="font-size:13px; color:#6b7280; margin:4px 0 0 20px;">
+                  {date + " | " if date else ""}<a href="{link}" style="color:#2563eb; text-decoration:underline;">Full article</a>
+                </div>
+              </td>
+            </tr>"""
+            issue_blocks += f"""
+        <div style="margin:32px 0 14px 0;">
+          <h3 style="font-size:17px; color:#111827; font-weight:800; margin:0 0 6px 0;">
+            {jname_esc}
+            <span style="font-weight:400; font-size:14px; color:#4b5563;"> · Volume {vol} Issue {iss}</span>
+          </h3>
+          <p style="font-size:13px; color:#6b7280; margin:0 0 12px 0;">
+            ● First appearance &nbsp;·&nbsp; ○ Appeared in a previous digest
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0">{rows_i}</table>
+        </div>"""
+        issue_html = f"""
+    <div style="margin-top:48px; padding-top:20px; border-top:3px solid #374151;">
+      <h2 style="font-size:20px; color:#111827; font-weight:900; margin:0 0 6px 0;
+                 letter-spacing:1px; text-transform:uppercase;">Latest Issue Digest</h2>
+      <p style="font-size:14px; color:#6b7280; margin:0 0 4px 0;">
+        The following journals published a new issue. Articles marked ● are new to this digest;
+        articles marked ○ appeared in an earlier weekly digest.
+      </p>
+      {issue_blocks}
+    </div>"""
+
+    n_new_issues = len(issue_sections) if issue_sections else 0
+    issue_note = (
+        f" · {n_new_issues} journal{'s' if n_new_issues != 1 else ''} published a new issue"
+        if n_new_issues else ""
+    )
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"></head>
 <body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
   <div style="max-width:760px; margin:0 auto; padding:34px 42px 28px 42px; background:#ffffff;">
     <div style="padding:0 0 26px 0; margin-bottom:34px;">
       <h1 style="color:#111827; margin:0; font-size:26px; line-height:1.25; font-weight:800;">Journal Weekly Digest</h1>
-      <p style="color:#4b5563; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals</p>
+      <p style="color:#4b5563; margin:8px 0 0; font-size:16px; line-height:1.45;">{week_str} · {total} new articles across {len(articles)} journals{issue_note}</p>
       <p style="margin:18px 0 0 0; font-size:15px; color:#374151; line-height:1.55;">Abstracts are included when available. Titles link to the full article pages.</p>
     </div>
     <div>{sections}</div>
+    {issue_html}
     <div style="margin-top:32px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af;">
       Generated by journal-tracker · GitHub Actions
     </div>
@@ -651,11 +864,14 @@ def main():
     if not TEST_MODE:
         update_journal_watermarks(articles)
 
-    if total == 0:
+    print("检测最新 Issue 目录...")
+    issue_sections, new_issue_seen, updated_issue_state = fetch_new_issues(seen)
+
+    if total == 0 and not issue_sections:
         print("无新内容，跳过发送。")
         return
 
-    html = build_html(articles, week_str)
+    html = build_html(articles, week_str, issue_sections=issue_sections)
 
     if TEST_MODE:
         subject = f"测试 · 第{issue_num}期 · Journal Weekly Digest · {total} articles — {week_str}"
@@ -666,7 +882,9 @@ def main():
         for items in articles.values():
             for a in items:
                 seen.add(a["uid"])
+        seen |= new_issue_seen
         save_seen(seen)
+        save_issue_state(updated_issue_state)
         send_email(html, subject)
         print("完成，缓存已更新。")
 
