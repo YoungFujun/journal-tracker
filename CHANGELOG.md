@@ -16,6 +16,10 @@
 
 邮件抬头新增提示文字，说明本期有几本期刊发布了最新一期目录，便于读者快速了解当周新期信息。
 
+后续维护又将五大刊相关抓取进一步抽为公共步骤。考虑到五大刊对主程序和四个子程序来说都是共同订阅内容，继续让每个脚本分别请求一次 RSS / CrossRef 并单独抓目录，既浪费请求次数，也更容易触发限流。现在改为由 `top5_tracker.py` 在每次运行时统一抓取一次五大刊近期新文章和最新一期目录，再由 `run_all_trackers.py` 分发给主程序和各子程序，分别对照自己的 `seen_*.json` 判断“本周是否新增”和“目录文章是否此前已推送”。
+
+这次调整没有取消各脚本独立运行的能力。`journal_tracker.py`、`yifanxu.py`、`haihuang.py`、`jiahuitan.py`、`shangyin.py` 仍可单独执行；只是每周 GitHub Actions 的正式入口改成统一调度脚本，以便把五大刊公共内容的抓取压缩为一次，同时保留各脚本自己的缓存、失败计数和收件人逻辑。
+
 ### 新增 Semantic Scholar 作为摘要补充备选源
 
 JPE 和 Econometrica 的 RSS 摘要字段仅含卷期元数据，OpenAlex 对近期发表文章的覆盖存在延迟（部分文章需数周后才被收录）。本次在 OpenAlex DOI 查询失败后，新增 Semantic Scholar API 作为第二备选源（`https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}?fields=abstract`），无需 API Key，调用间隔 0.5 秒。运行日志新增各来源摘要命中数统计（RSS/CrossRef 自带 / OpenAlex / Semantic Scholar / 无摘要）。以上改动同步应用于全部五个脚本。

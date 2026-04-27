@@ -53,14 +53,23 @@ jobs:
       - name: Install dependencies
         run: pip install feedparser
 
-      - name: Run tracker (main, 正式)
-        if: github.event_name == 'schedule' || inputs.run_main == true
+      - name: Run trackers (正式)
+        if: github.event_name == 'schedule' || inputs.run_main == true || inputs.run_yifanxu == true || inputs.run_haihuang == true || inputs.run_jiahuitan == true || inputs.run_shangyin == true
         env:
-          EMAIL_SENDER:    ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD:  ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
-          EMAIL_ALERT:     ${{ secrets.EMAIL_ALERT }}
-        run: python journal_tracker.py
+          EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT:          ${{ secrets.EMAIL_RECIPIENT }}
+          EMAIL_RECIPIENT_YIFAN:    ${{ secrets.EMAIL_RECIPIENT_YIFAN }}
+          EMAIL_RECIPIENT_HAIHUANG: ${{ secrets.EMAIL_RECIPIENT_HAIHUANG }}
+          EMAIL_RECIPIENT_JIAHUITAN: ${{ secrets.EMAIL_RECIPIENT_JIAHUITAN }}
+          EMAIL_RECIPIENT_SHANGYIN: ${{ secrets.EMAIL_RECIPIENT_SHANGYIN }}
+          EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
+          RUN_MAIN:                 ${{ github.event_name == 'schedule' || inputs.run_main == true }}
+          RUN_YIFANXU:              ${{ github.event_name == 'schedule' || inputs.run_yifanxu == true }}
+          RUN_HAIHUANG:             ${{ github.event_name == 'schedule' || inputs.run_haihuang == true }}
+          RUN_JIAHUITAN:            ${{ github.event_name == 'schedule' || inputs.run_jiahuitan == true }}
+          RUN_SHANGYIN:             ${{ github.event_name == 'schedule' || inputs.run_shangyin == true }}
+        run: python run_all_trackers.py
 
       - name: Run tracker (main, 测试)
         if: inputs.test_main == true
@@ -71,42 +80,6 @@ jobs:
           EMAIL_ALERT:     ${{ secrets.EMAIL_ALERT }}
           TEST_LABEL:      ${{ inputs.test_label }}
         run: python journal_tracker.py --test
-
-      - name: Run tracker (yifanxu)
-        if: github.event_name == 'schedule' || inputs.run_yifanxu == true
-        env:
-          EMAIL_SENDER:          ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD:        ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECIPIENT_YIFAN: ${{ secrets.EMAIL_RECIPIENT_YIFAN }}
-          EMAIL_ALERT:           ${{ secrets.EMAIL_ALERT }}
-        run: python yifanxu.py
-
-      - name: Run tracker (haihuang)
-        if: github.event_name == 'schedule' || inputs.run_haihuang == true
-        env:
-          EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECIPIENT_HAIHUANG: ${{ secrets.EMAIL_RECIPIENT_HAIHUANG }}
-          EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
-        run: python haihuang.py
-
-      - name: Run tracker (jiahuitan)
-        if: github.event_name == 'schedule' || inputs.run_jiahuitan == true
-        env:
-          EMAIL_SENDER:              ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD:            ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECIPIENT_JIAHUITAN: ${{ secrets.EMAIL_RECIPIENT_JIAHUITAN }}
-          EMAIL_ALERT:               ${{ secrets.EMAIL_ALERT }}
-        run: python jiahuitan.py
-
-      - name: Run tracker (shangyin)
-        if: github.event_name == 'schedule' || inputs.run_shangyin == true
-        env:
-          EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECIPIENT_SHANGYIN: ${{ secrets.EMAIL_RECIPIENT_SHANGYIN }}
-          EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
-        run: python shangyin.py
 
       - name: Commit updated cache files
         run: |

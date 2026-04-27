@@ -18,6 +18,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
+import top5_tracker
+
 # ── RSS期刊列表 ──────────────────────────────────────────────────────────────
 JOURNALS = [
     # 综合经济学（OUP RSS 为当期期号静态 feed，改用 CrossRef，见下方）
@@ -64,6 +66,7 @@ SCRIPT_NAME      = "journal_tracker"
 START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
 
 TEST_MODE = "--test" in sys.argv
+TOP5_JOURNAL_NAMES = top5_tracker.TOP5_JOURNAL_NAMES
 
 
 # ── 缓存读写 ──────────────────────────────────────────────────────────────────
@@ -135,10 +138,13 @@ def update_journal_watermarks(articles: dict):
 
 
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
-def fetch_new_articles(seen: set) -> tuple:
+def fetch_new_articles(seen: set, exclude_names=None) -> tuple:
     results, errors = {}, {}
     cutoff = datetime.now(timezone.utc) - timedelta(days=21)
+    excluded = set(exclude_names or [])
     for name, url in JOURNALS:
+        if name in excluded:
+            continue
         try:
             feed = feedparser.parse(url)
             new_items = []
@@ -187,11 +193,14 @@ def fetch_new_articles(seen: set) -> tuple:
 
 
 # ── 抓取 CrossRef ─────────────────────────────────────────────────────────────
-def fetch_crossref_articles(seen: set) -> tuple:
+def fetch_crossref_articles(seen: set, exclude_names=None) -> tuple:
     """通过CrossRef API获取无RSS期刊的最新文章（最近90天内发表的）"""
     results, errors = {}, {}
     from_date = (datetime.now(timezone.utc) - timedelta(days=21)).strftime("%Y-%m-%d")
+    excluded = set(exclude_names or [])
     for name, issn in CROSSREF_JOURNALS:
+        if name in excluded:
+            continue
         try:
             url = (f"https://api.crossref.org/journals/{issn}/works"
                    f"?sort=published&order=desc&rows=50"
@@ -323,23 +332,7 @@ def enrich_abstracts(articles: dict):
 
 
 # ── Issue 目录追踪 ────────────────────────────────────────────────────────────
-ISSUE_TRACKED_JOURNALS = {
-    "American Economic Review":           "0002-8282",
-    "The Quarterly Journal of Economics": "0033-5533",
-    "The Review of Economic Studies":     "0034-6527",
-    "Journal of Political Economy":       "0022-3808",
-    "Econometrica":                       "0012-9682",
-}
-
 ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_journal_tracker.json"
-
-# 过滤掉期刊内的非研究文章（Front Matter、Back Matter 等）
-_SKIP_TITLE_PATTERNS = re.compile(
-    r'\b(front\s*matter|back\s*matter|backmatter|frontmatter|erratum|corrigendum'
-    r'|turnaround\s*time|recent\s*refer|acknowledgment|election\s*of\s*fellow'
-    r'|annual\s*report|report\s*of\s*the\s*secretary|report\s*of\s*the\s*treasurer)\b',
-    re.IGNORECASE
-)
 
 
 def load_issue_state() -> dict:
@@ -352,110 +345,12 @@ def save_issue_state(state: dict):
     ISSUE_STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
 
 
-def fetch_new_issues(seen: set) -> tuple:
-    """检测五大刊是否有新 issue 发布，返回 (issue_sections, new_issue_seen, updated_state)。"""
-    all_journal_names = {n for n, _ in JOURNALS} | {n for n, _ in CROSSREF_JOURNALS}
-    tracked = {n: issn for n, issn in ISSUE_TRACKED_JOURNALS.items() if n in all_journal_names}
-
+def fetch_new_issues(seen: set, public_issue_payload=None) -> tuple:
     state = load_issue_state()
-    headers = {"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"}
-    issue_sections = {}
-    new_issue_seen = set()
-    updated_state = dict(state)
-
-    for name, issn in tracked.items():
-        try:
-            # 查最新50条，找最新 (volume, issue)
-            url = (f"https://api.crossref.org/journals/{issn}/works"
-                   f"?sort=published&order=desc&rows=50"
-                   f"&select=DOI,title,author,abstract,published,volume,issue"
-                   f"&filter=type:journal-article")
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                items = json.loads(resp.read()).get("message", {}).get("items", [])
-
-            # 找有 volume 和 issue 的条目，确定最新期号
-            latest_vol, latest_iss = None, None
-            for item in items:
-                vol = item.get("volume", "")
-                iss = item.get("issue", "")
-                if vol and iss:
-                    if latest_vol is None:
-                        latest_vol, latest_iss = vol, iss
-                    else:
-                        try:
-                            if (int(vol) > int(latest_vol) or
-                                    (vol == latest_vol and int(iss) > int(latest_iss))):
-                                latest_vol, latest_iss = vol, iss
-                        except ValueError:
-                            pass  # 特刊 issue 号含字母（如 S1），跳过比较
-
-            if not latest_vol:
-                print(f"  Issue追踪：{name} 未找到有效 volume/issue 信息，跳过")
-                continue
-
-            issue_key = f"{latest_vol}/{latest_iss}"
-            prev_key = state.get(name, "")
-
-            if issue_key == prev_key:
-                print(f"  Issue追踪：{name} 无新 issue（当前 {issue_key}）")
-                continue
-
-            print(f"  Issue追踪：{name} 检测到新 issue {issue_key}（上次 {prev_key or '首次'}）")
-
-            # 拉取该期完整文章列表
-            url2 = (f"https://api.crossref.org/journals/{issn}/works"
-                    f"?rows=100"
-                    f"&select=DOI,title,author,abstract,published,URL,volume,issue"
-                    f"&filter=type:journal-article"
-                    f"&sort=published&order=desc")
-            req2 = urllib.request.Request(url2, headers=headers)
-            with urllib.request.urlopen(req2, timeout=15) as resp2:
-                all_items = json.loads(resp2.read()).get("message", {}).get("items", [])
-            issue_items = [
-                i for i in all_items
-                if str(i.get("volume", "")) == latest_vol and str(i.get("issue", "")) == latest_iss
-            ]
-
-            articles_list = []
-            for item in issue_items:
-                title = " ".join(item.get("title", ["(no title)"]))
-                if _SKIP_TITLE_PATTERNS.search(title):
-                    continue
-                doi = item.get("DOI", "")
-                link = item.get("URL") or (f"https://doi.org/{doi}" if doi else "")
-                authors = ", ".join(
-                    f"{a.get('given','')} {a.get('family','')}".strip()
-                    for a in item.get("author", [])[:5]
-                )
-                abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
-                pd = item.get("published", {}).get("date-parts", [[]])[0]
-                pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
-                # seen 中可能以 DOI、DOI+URL、或完整 URL 任意格式存储
-                doi_lower = doi.lower()
-                previously_sent = (
-                    doi in seen or doi_lower in seen or
-                    any(doi_lower in s.lower() for s in seen if doi_lower)
-                )
-                if not previously_sent and doi:
-                    new_issue_seen.add(doi)
-                articles_list.append({
-                    "title": title, "link": link, "authors": authors,
-                    "abstract": abstract, "date": pub_str,
-                    "doi": doi, "previously_sent": previously_sent,
-                })
-
-            if articles_list:
-                issue_sections[name] = {
-                    "volume": latest_vol, "issue": latest_iss,
-                    "articles": articles_list,
-                }
-                updated_state[name] = issue_key
-
-        except Exception as e:
-            print(f"  Issue追踪：{name} 查询失败 — {e}")
-
-    return issue_sections, new_issue_seen, updated_state
+    if public_issue_payload is None:
+        public_issue_payload, _ = top5_tracker.fetch_top5_latest_issues()
+    tracked_names = ({n for n, _ in JOURNALS} | {n for n, _ in CROSSREF_JOURNALS}) & TOP5_JOURNAL_NAMES
+    return top5_tracker.select_issue_sections(public_issue_payload, seen, state, allowed_names=tracked_names)
 
 
 # ── 构建 HTML ─────────────────────────────────────────────────────────────────
@@ -689,7 +584,7 @@ def send_alert(triggered: dict):
 
 
 # ── 主流程 ────────────────────────────────────────────────────────────────────
-def main():
+def main(shared_top5_articles=None, shared_top5_article_errors=None, shared_top5_issues=None):
     week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
     issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
     mode_label = "【测试模式·全量】" if TEST_MODE else "【增量模式】"
@@ -699,11 +594,16 @@ def main():
     fail_counts = load_fail_counts()
     print(f"Previously seen: {len(seen)} articles")
 
-    new_articles, rss_errors      = fetch_new_articles(seen)
-    crossref_results, cr_errors   = fetch_crossref_articles(seen)
+    exclude_names = TOP5_JOURNAL_NAMES
+    new_articles, rss_errors      = fetch_new_articles(seen, exclude_names=exclude_names)
+    crossref_results, cr_errors   = fetch_crossref_articles(seen, exclude_names=exclude_names)
     new_articles.update(crossref_results)
+    if shared_top5_articles is None:
+        shared_top5_articles, shared_top5_article_errors = top5_tracker.fetch_top5_recent_articles()
+    top5_results = top5_tracker.select_new_articles(shared_top5_articles, seen, allowed_names=TOP5_JOURNAL_NAMES)
+    new_articles.update(top5_results)
     enrich_abstracts(new_articles)
-    all_errors = {**rss_errors, **cr_errors}
+    all_errors = {**rss_errors, **cr_errors, **(shared_top5_article_errors or {})}
 
     # 测试模式不更新失败计数，不发告警
     if not TEST_MODE:
@@ -726,7 +626,7 @@ def main():
         update_journal_watermarks(new_articles)
 
     print("检测最新 Issue 目录...")
-    issue_sections, new_issue_seen, updated_issue_state = fetch_new_issues(seen)
+    issue_sections, new_issue_seen, updated_issue_state = fetch_new_issues(seen, public_issue_payload=shared_top5_issues)
 
     if total == 0 and not issue_sections:
         print("Nothing new this week, skipping email.")
