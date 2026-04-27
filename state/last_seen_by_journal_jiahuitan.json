@@ -1,0 +1,107 @@
+{
+  "Journal of Political Economy": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-23",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "Econometrica": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Labor Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Development Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 2,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "Journal of Public Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 2,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "The Economic Journal": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Population Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 1,
+    "last_article_date": "2026-04-22",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "China Economic Review": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 1,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "Journal of Health Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 2,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "Health Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 1,
+    "last_article_date": "2026-04-22",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "Social Science & Medicine": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 9,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "American Economic Review": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "The Review of Economics and Statistics": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "The Quarterly Journal of Economics": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 1,
+    "last_article_date": "2026-04-24",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  },
+  "The Review of Economic Studies": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:31:07Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-21",
+    "last_updated_run_utc": "2026-04-27T04:31:07Z"
+  }
+}

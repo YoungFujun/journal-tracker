@@ -1,0 +1,114 @@
+{
+  "Journal of Political Economy": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-23",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "Econometrica": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Labor Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Development Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 2,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "Journal of Public Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 2,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "The Economic Journal": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "Journal of Population Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 1,
+    "last_article_date": "2026-04-22",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "China Economic Review": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 1,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "Journal of Financial Economics": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 1,
+    "last_article_date": "",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "The Journal of Finance": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "The Journal of Economic History": {
+    "source": "rss",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "American Economic Review": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "The Review of Economics and Statistics": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 0,
+    "last_article_date": "",
+    "last_updated_run_utc": ""
+  },
+  "The Quarterly Journal of Economics": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 1,
+    "last_article_date": "2026-04-24",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "The Review of Economic Studies": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-21",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  },
+  "Review of Financial Studies": {
+    "source": "crossref",
+    "last_run_utc": "2026-04-27T04:29:59Z",
+    "new_count": 7,
+    "last_article_date": "2026-04-24",
+    "last_updated_run_utc": "2026-04-27T04:29:59Z"
+  }
+}
