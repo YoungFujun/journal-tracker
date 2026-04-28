@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .env
 NOTES.md
+.venv311/
+.DS_Store
