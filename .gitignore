@@ -4,3 +4,4 @@ __pycache__/
 NOTES.md
 .venv311/
 .DS_Store
+preview_*.html
