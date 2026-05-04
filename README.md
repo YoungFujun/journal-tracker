@@ -32,15 +32,15 @@
 
 | 文件 | 说明 | 期刊数 |
 |------|------|--------|
-| `run_all_trackers.py` | **统一入口**，每周正式运行时先抓一次五大刊公共内容，再依次调度主程序和各子程序 | - |
+| `run_all_trackers.py` | **统一入口**，每周正式运行时先抓一次五大刊公共内容，再依次调度主程序和各可选预设 | - |
 | `top5_tracker.py` | **公共模块**，负责五大刊（AER、QJE、JPE、Econometrica、REStud）的近期新文章抓取与最新一期目录抓取 | 5 |
 | `journal_tracker.py` | **主程序**，覆盖经济/金融/经济史等领域期刊，并消费公共五大刊内容 | 16 |
-| `yifanxu.py` | 个性化子程序（为朋友定制），聚焦经济学核心期刊，并消费公共五大刊内容 | 8 |
-| `haihuang.py` | 个性化子程序（为朋友定制），覆盖经济/社会/政治/金融/经济史，并消费公共五大刊内容 | 26 |
-| `jiahuitan.py` | 个性化子程序（为朋友定制），覆盖经济/公共/卫生经济学等领域期刊，并消费公共五大刊内容 | 15 |
-| `shangyin.py` | 个性化子程序（为朋友定制），聚焦经济学 Top 5、城市经济与 NBER 区域经济工作论文，并消费公共五大刊内容 | 7 |
+| `xu.py` | 可选预设，聚焦较窄的核心经济学期刊，并消费公共五大刊内容 | 8 |
+| `huang.py` | 可选预设，覆盖更宽的经济/社会/政治/金融/经济史来源，并消费公共五大刊内容 | 26 |
+| `tan.py` | 可选预设，覆盖经济/公共/卫生经济学等领域期刊，并消费公共五大刊内容 | 15 |
+| `yin.py` | 可选预设，聚焦经济学 Top 5、城市经济与区域经济工作论文，并消费公共五大刊内容 | 7 |
 
-各脚本仍然独立维护缓存文件，互不干扰。缓存和失败计数文件统一放在 `state/` 目录，由 GitHub Actions 自动更新。子程序作为扩展示例，Fork 后可按需删除或仿照添加。
+各脚本仍然独立维护缓存文件，互不干扰。缓存和失败计数文件统一放在 `state/` 目录，由 GitHub Actions 自动更新。附加预设只是示例，Fork 后可按需删除、修改或新增。
 
 日常周报由 `run_all_trackers.py` 统一调度。五大刊的近期新文章抓取和最新一期目录抓取会在每次运行时先统一执行一次，再分别对照各脚本自己的缓存文件判断“是否已推送”。这样既保留了各脚本独立的收件人、缓存和发信逻辑，也避免对五大刊重复请求。各单独脚本仍可直接运行，适合本地调试或后续扩展。
 
@@ -54,7 +54,7 @@
 - **2026-04-20**：将缓存和失败计数 JSON 移入 `state/`，减少根目录文件数量。
 - **2026-04-13**：抓取窗口扩展为 21 天；OUP、AJS、SMR 等静态或失效 RSS 迁到 CrossRef；修复 Wiley 链接去重问题。
 - **2026-04-07**：摘要补充改为 OpenAlex DOI 精确查询；邮件按有摘要/无摘要分组展示；补充 ScienceDirect 特殊处理。
-- **2026-03-30**：新增个性化子追踪器、手动运行开关、期号标题、RSS 失败告警和缓存自动提交。
+- **2026-03-30**：新增附加预设、手动运行开关、期号标题、RSS 失败告警和缓存自动提交。
 
 完整维护记录见 [CHANGELOG.md](CHANGELOG.md)。
 
@@ -75,17 +75,17 @@
 
 ### 第三步：配置 GitHub Secrets
 
-进入你的 Fork 仓库 → **Settings → Secrets and variables → Actions → New repository secret**，添加以下 Secret（子程序 Secret 按需添加）：
+进入你的 Fork 仓库 → **Settings → Secrets and variables → Actions → New repository secret**，添加以下 Secret（附加预设 Secret 按需添加）：
 
 | Secret 名称 | 填写内容 | 必填 |
 |---|---|---|
 | `EMAIL_SENDER` | 163 邮箱地址，如 `yourname@163.com` | 是 |
 | `EMAIL_PASSWORD` | 第二步获得的 SMTP 授权码 | 是 |
 | `EMAIL_RECIPIENT` | 主程序收件地址，多地址用英文逗号分隔 | 是 |
-| `EMAIL_RECIPIENT_YIFAN` | yifanxu 子程序收件地址 | 使用该子程序时 |
-| `EMAIL_RECIPIENT_HAIHUANG` | haihuang 子程序收件地址 | 使用该子程序时 |
-| `EMAIL_RECIPIENT_JIAHUITAN` | jiahuitan 子程序收件地址 | 使用该子程序时 |
-| `EMAIL_RECIPIENT_SHANGYIN` | shangyin 子程序收件地址（例如 `friendname@example.com`） | 使用该子程序时 |
+| `EMAIL_RECIPIENT_XU` | xu 预设收件地址 | 使用该预设时 |
+| `EMAIL_RECIPIENT_HUANG` | huang 预设收件地址 | 使用该预设时 |
+| `EMAIL_RECIPIENT_TAN` | tan 预设收件地址 | 使用该预设时 |
+| `EMAIL_RECIPIENT_YIN` | yin 预设收件地址（例如 `friendname@example.com`） | 使用该预设时 |
 | `EMAIL_ALERT` | RSS 失效告警收件地址 | 启用告警功能时 |
 
 ### 第四步：手动触发一次测试
@@ -173,7 +173,7 @@ CROSSREF_JOURNALS = [
 
 1. GitHub Actions 按计划触发 `run_all_trackers.py`
 2. 统一抓取一次五大刊（AER、QJE、JPE、Econometrica、REStud）的近期新文章和最新一期目录
-3. 主程序和各子程序分别抓取自己的非五大刊来源
+3. 主程序和各附加预设分别抓取自己的非五大刊来源
 4. 各脚本将公共五大刊内容与自己的缓存文件对照，筛出本周新增文章，并判断最新一期目录中哪些文章此前已经推送过
 5. 通过 OpenAlex API（DOI 精确查询）为缺少摘要的文章补充摘要；OpenAlex 未覆盖时回退至 Semantic Scholar API；ScienceDirect 期刊跳过（RSS 无公开 DOI）
 6. 若检测到五大刊有新一期目录，则在邮件末尾追加完整目录，并注明哪些文章曾在此前邮件中出现
@@ -233,5 +233,5 @@ HIGHLIGHT_TOPICS = {
 **Q：如何只保留自己关注的期刊？**
 直接编辑 `journal_tracker.py`，删除不需要的行后提交即可。
 
-**Q：如何添加自己的个性化子程序？**
-参照 `yifanxu.py` 或 `haihuang.py` 新建脚本，修改期刊列表和收件人 Secret 名称，再把新脚本接入 `run_all_trackers.py` 和 `weekly_digest.yml` 的输入开关即可。
+**Q：如何添加自己的附加预设？**
+参照 `xu.py` 或 `huang.py` 新建脚本，修改期刊列表和收件人 Secret 名称，再把新脚本接入 `run_all_trackers.py` 和 `weekly_digest.yml` 的输入开关即可。

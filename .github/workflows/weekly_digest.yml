@@ -18,20 +18,20 @@ on:
         description: "测试邮件标题标签（test_main=true 时生效）"
         type: string
         default: ""
-      run_yifanxu:
-        description: "Run yifanxu.py"
+      run_xu:
+        description: "Run xu.py"
         type: boolean
         default: true
-      run_haihuang:
-        description: "Run haihuang.py"
+      run_huang:
+        description: "Run huang.py"
         type: boolean
         default: true
-      run_jiahuitan:
-        description: "Run jiahuitan.py"
+      run_tan:
+        description: "Run tan.py"
         type: boolean
         default: true
-      run_shangyin:
-        description: "Run shangyin.py"
+      run_yin:
+        description: "Run yin.py"
         type: boolean
         default: true
 
@@ -54,21 +54,21 @@ jobs:
         run: pip install feedparser
 
       - name: Run trackers (正式)
-        if: github.event_name == 'schedule' || inputs.run_main == true || inputs.run_yifanxu == true || inputs.run_haihuang == true || inputs.run_jiahuitan == true || inputs.run_shangyin == true
+        if: github.event_name == 'schedule' || inputs.run_main == true || inputs.run_xu == true || inputs.run_huang == true || inputs.run_tan == true || inputs.run_yin == true
         env:
           EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECIPIENT:          ${{ secrets.EMAIL_RECIPIENT }}
-          EMAIL_RECIPIENT_YIFAN:    ${{ secrets.EMAIL_RECIPIENT_YIFAN }}
-          EMAIL_RECIPIENT_HAIHUANG: ${{ secrets.EMAIL_RECIPIENT_HAIHUANG }}
-          EMAIL_RECIPIENT_JIAHUITAN: ${{ secrets.EMAIL_RECIPIENT_JIAHUITAN }}
-          EMAIL_RECIPIENT_SHANGYIN: ${{ secrets.EMAIL_RECIPIENT_SHANGYIN }}
+          EMAIL_RECIPIENT_XU:       ${{ secrets.EMAIL_RECIPIENT_XU }}
+          EMAIL_RECIPIENT_HUANG:    ${{ secrets.EMAIL_RECIPIENT_HUANG }}
+          EMAIL_RECIPIENT_TAN:      ${{ secrets.EMAIL_RECIPIENT_TAN }}
+          EMAIL_RECIPIENT_YIN:      ${{ secrets.EMAIL_RECIPIENT_YIN }}
           EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
           RUN_MAIN:                 ${{ github.event_name == 'schedule' || inputs.run_main == true }}
-          RUN_YIFANXU:              ${{ github.event_name == 'schedule' || inputs.run_yifanxu == true }}
-          RUN_HAIHUANG:             ${{ github.event_name == 'schedule' || inputs.run_haihuang == true }}
-          RUN_JIAHUITAN:            ${{ github.event_name == 'schedule' || inputs.run_jiahuitan == true }}
-          RUN_SHANGYIN:             ${{ github.event_name == 'schedule' || inputs.run_shangyin == true }}
+          RUN_XU:                   ${{ github.event_name == 'schedule' || inputs.run_xu == true }}
+          RUN_HUANG:                ${{ github.event_name == 'schedule' || inputs.run_huang == true }}
+          RUN_TAN:                  ${{ github.event_name == 'schedule' || inputs.run_tan == true }}
+          RUN_YIN:                  ${{ github.event_name == 'schedule' || inputs.run_yin == true }}
         run: python run_all_trackers.py
 
       - name: Run tracker (main, 测试)

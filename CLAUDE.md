@@ -5,18 +5,21 @@
 ```
 journal-tracker/
 ├── journal_tracker.py        # 【主程序】覆盖经济/金融/经济史 16 个期刊
-├── yifanxu.py                # 【个性化子程序】为朋友定制，经济学核心 8 个期刊
-├── haihuang.py               # 【个性化子程序】为朋友定制，经济/社会/政治/金融/史 26 个期刊
-├── jiahuitan.py              # 【个性化子程序】为朋友定制，经济/公共/卫生经济学 15 个期刊
+├── xu.py                     # 【可选预设】经济学核心 8 个期刊
+├── huang.py                  # 【可选预设】经济/社会/政治/金融/史 26 个期刊
+├── tan.py                    # 【可选预设】经济/公共/卫生经济学 15 个期刊
+├── yin.py                    # 【可选预设】Top 5 + 城市/区域经济 7 个来源
 ├── state/                    # GitHub Actions 维护的缓存和失败计数
 │   ├── seen_articles.json
-│   ├── seen_yifanxu.json
-│   ├── seen_haihuang.json
-│   ├── seen_jiahuitan.json
+│   ├── seen_xu.json
+│   ├── seen_huang.json
+│   ├── seen_tan.json
+│   ├── seen_yin.json
 │   ├── fail_counts_journal_tracker.json
-│   ├── fail_counts_yifanxu.json
-│   ├── fail_counts_haihuang.json
-│   └── fail_counts_jiahuitan.json
+│   ├── fail_counts_xu.json
+│   ├── fail_counts_huang.json
+│   ├── fail_counts_tan.json
+│   └── fail_counts_yin.json
 ├── requirements.txt
 ├── NOTES.md                   # 本地进度文档（不同步 GitHub）
 ├── .github/workflows/
@@ -51,12 +54,12 @@ journal-tracker/
 
 ## 脚本规范
 
-- 四个脚本**独立维护，不共享代码**，保持各自完整可运行
-- 主程序（`journal_tracker.py`）覆盖核心期刊；子程序为朋友个性化定制，期刊范围可与主程序重叠
+- 四个预设脚本**独立维护，不共享代码**，保持各自完整可运行
+- 主程序（`journal_tracker.py`）覆盖核心期刊；附加预设用于不同订阅组合，期刊范围可与主程序重叠
 - 邮件标题格式：`第N期 · Journal Weekly Digest · {total} new articles — {week_str}`；测试模式：`测试 · 第N期 · Journal Weekly Digest · ...`；期号由 `START_DATE = date(2026, 3, 30)` 与当前日期计算得出
 - 环境变量统一从 `os.environ` 读取，不硬编码敏感信息
 - 缓存文件统一放在 `state/`，文件名与脚本对应（`seen_<scriptname>.json`、`fail_counts_<scriptname>.json`），不交叉引用
-- 新增子程序时，参照现有子程序结构，并在 `weekly_digest.yml` 追加对应 step（含 `EMAIL_ALERT` 环境变量）
+- 新增预设脚本时，参照现有预设结构，并在 `weekly_digest.yml` 追加对应 step（含 `EMAIL_ALERT` 环境变量）
 - RSS 失效检测：每个脚本独立维护 `fail_counts_*.json`，连续失败达 5 次时向 `EMAIL_ALERT` 发送告警；测试模式不触发告警、不更新计数
 
 ## GitHub Secrets 一览
@@ -66,9 +69,10 @@ journal-tracker/
 | `EMAIL_SENDER` | 发件邮箱 | 所有脚本共用 |
 | `EMAIL_PASSWORD` | SMTP 授权码 | 所有脚本共用 |
 | `EMAIL_RECIPIENT` | 主程序收件地址 | `journal_tracker.py` |
-| `EMAIL_RECIPIENT_YIFAN` | yifanxu 子程序收件地址 | `yifanxu.py` |
-| `EMAIL_RECIPIENT_HAIHUANG` | haihuang 子程序收件地址 | `haihuang.py` |
-| `EMAIL_RECIPIENT_JIAHUITAN` | jiahuitan 子程序收件地址 | `jiahuitan.py` |
+| `EMAIL_RECIPIENT_XU` | xu 预设收件地址 | `xu.py` |
+| `EMAIL_RECIPIENT_HUANG` | huang 预设收件地址 | `huang.py` |
+| `EMAIL_RECIPIENT_TAN` | tan 预设收件地址 | `tan.py` |
+| `EMAIL_RECIPIENT_YIN` | yin 预设收件地址 | `yin.py` |
 | `EMAIL_ALERT` | RSS 失效告警收件地址（所有脚本共用） | 所有脚本 |
 
 新增脚本时，若需独立收件人，在 GitHub repo Settings → Secrets 中添加对应条目，并在 `weekly_digest.yml` 的 `env:` 块中传入。
@@ -100,7 +104,7 @@ journal-tracker/
 缓存文件（`state/seen_*.json`、`state/fail_counts_*.json`）必须保留在远端仓库供 GitHub Actions 使用，但本地无需同步。已对这些文件执行：
 
 ```bash
-git update-index --skip-worktree state/seen_articles.json state/seen_yifanxu.json state/seen_haihuang.json state/seen_jiahuitan.json state/fail_counts_journal_tracker.json state/fail_counts_yifanxu.json state/fail_counts_haihuang.json state/fail_counts_jiahuitan.json
+git update-index --skip-worktree state/seen_articles.json state/seen_xu.json state/seen_huang.json state/seen_tan.json state/seen_yin.json state/fail_counts_journal_tracker.json state/fail_counts_xu.json state/fail_counts_huang.json state/fail_counts_tan.json state/fail_counts_yin.json
 ```
 
 新克隆仓库后需重新执行上述命令，否则这些文件会出现在 `git status` 中。
@@ -138,7 +142,7 @@ req = urllib.request.Request(url, headers={'User-Agent': 'journal-tracker/1.0'})
 items = json.loads(urllib.request.urlopen(req, timeout=15).read())['message']['items']
 
 seen = set()
-for fname in ['state/seen_articles.json','state/seen_yifanxu.json','state/seen_haihuang.json','state/seen_jiahuitan.json']:
+for fname in ['state/seen_articles.json','state/seen_xu.json','state/seen_huang.json','state/seen_tan.json','state/seen_yin.json']:
     r = subprocess.run(['git','show',f'origin/main:{fname}'], capture_output=True, text=True)
     if r.returncode == 0: seen |= set(json.loads(r.stdout))
 

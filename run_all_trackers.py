@@ -25,10 +25,10 @@ def main():
 
     runners = [
         ("RUN_MAIN", True, "journal_tracker"),
-        ("RUN_YIFANXU", True, "yifanxu"),
-        ("RUN_HAIHUANG", True, "haihuang"),
-        ("RUN_JIAHUITAN", True, "jiahuitan"),
-        ("RUN_SHANGYIN", True, "shangyin"),
+        ("RUN_XU", True, "xu"),
+        ("RUN_HUANG", True, "huang"),
+        ("RUN_TAN", True, "tan"),
+        ("RUN_YIN", True, "yin"),
     ]
 
     for env_name, default_enabled, module_name in runners:

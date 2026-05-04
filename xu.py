@@ -1,10 +1,10 @@
 """
-yifanxu — 子集期刊追踪器
+xu — 可选期刊预设
 抓取指定期刊的最新文章，汇总后发送邮件通知。
 
 用法：
-  正常运行（增量，更新缓存）:  python yifanxu.py
-  测试运行（全量，不写缓存）:  python yifanxu.py --test
+  正常运行（增量，更新缓存）:  python xu.py
+  测试运行（全量，不写缓存）:  python xu.py --test
 """
 
 import os
@@ -44,17 +44,17 @@ CROSSREF_JOURNALS = [
 
 # ── 配置（从环境变量读取）────────────────────────────────────────────────────
 STATE_DIR        = Path(__file__).resolve().parent / "state"
-SEEN_FILE        = STATE_DIR / "seen_yifanxu.json"
-FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_yifanxu.json"
-LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_yifanxu.json"
+SEEN_FILE        = STATE_DIR / "seen_xu.json"
+FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_xu.json"
+LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_xu.json"
 SMTP_HOST        = "smtp.163.com"
 SMTP_PORT        = 465
 SENDER           = os.environ["EMAIL_SENDER"]
 PASSWORD         = os.environ["EMAIL_PASSWORD"]
-RECIPIENT        = os.environ["EMAIL_RECIPIENT_YIFAN"]
+RECIPIENT        = os.environ["EMAIL_RECIPIENT_XU"]
 ALERT_RECIPIENT  = os.environ.get("EMAIL_ALERT", "")
 FAIL_THRESHOLD   = 5
-SCRIPT_NAME      = "yifanxu"
+SCRIPT_NAME      = "xu"
 START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
 
 TEST_MODE = "--test" in sys.argv
@@ -329,7 +329,7 @@ def enrich_abstracts(articles: dict):
 
 
 # ── Issue 目录追踪 ────────────────────────────────────────────────────────────
-ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_yifanxu.json"
+ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_xu.json"
 
 
 def load_issue_state() -> dict:
@@ -585,7 +585,7 @@ def main(shared_top5_articles=None, shared_top5_article_errors=None, shared_top5
     week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
     issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
     mode_label = "【测试模式·全量】" if TEST_MODE else "【增量模式】"
-    print(f"=== yifanxu tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
+    print(f"=== xu tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
 
     seen        = set() if TEST_MODE else load_seen()
     fail_counts = load_fail_counts()

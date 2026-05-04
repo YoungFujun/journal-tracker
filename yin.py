@@ -1,10 +1,10 @@
 """
-jiahuitan — 子集期刊追踪器
+yin — 可选期刊预设
 抓取指定期刊的最新文章，汇总后发送邮件通知。
 
 用法：
-  正常运行（增量，更新缓存）:  python jiahuitan.py
-  测试运行（全量，不写缓存）:  python jiahuitan.py --test
+  正常运行（增量，更新缓存）:  python yin.py
+  测试运行（全量，不写缓存）:  python yin.py --test
 """
 
 import os
@@ -14,6 +14,7 @@ import html
 import re
 import time
 import smtplib
+import calendar
 import feedparser
 import urllib.request
 import urllib.parse
@@ -27,43 +28,34 @@ import top5_tracker
 # ── 期刊列表（RSS）───────────────────────────────────────────────────────────
 JOURNALS = [
     # OUP 期刊（QJE、RES）改用 CrossRef，见下方
-    ("Journal of Political Economy",           "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"),
-    ("Econometrica",                           "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
-    ("Journal of Labor Economics",             "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jole"),
-    ("Journal of Development Economics",       "https://rss.sciencedirect.com/publication/science/03043878"),
-    ("Journal of Public Economics",            "https://rss.sciencedirect.com/publication/science/00472727"),
-    ("The Economic Journal",                   "https://onlinelibrary.wiley.com/feed/14680297/most-recent"),
-    ("Journal of Population Economics",        "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=148&channel-name=Journal+of+Population+Economics"),
-    ("China Economic Review",                  "https://rss.sciencedirect.com/publication/science/1043951X"),
-    # 卫生经济学
-    ("Journal of Health Economics",            "https://rss.sciencedirect.com/publication/science/01676296"),
-    ("Health Economics",                       "https://onlinelibrary.wiley.com/feed/10991050/most-recent"),
-    ("Social Science & Medicine",              "https://rss.sciencedirect.com/publication/science/02779536"),
+    ("Journal of Political Economy", "https://www.journals.uchicago.edu/action/showFeed?type=etoc&feed=rss&jc=jpe"),
+    ("Econometrica", "https://onlinelibrary.wiley.com/feed/14680262/most-recent"),
+    ("Journal of Urban Economics", "https://rss.sciencedirect.com/publication/science/00941190"),
+    ("NBER Working Papers (Regional Economics)", "https://www.nber.org/rss/new.xml"),
 ]
 
-# ── CrossRef 期刊（无 RSS）──────────────────────────────────────────────────
+# ── CrossRef 期刊（包含无 RSS 期刊及 OUP 期刊）──────────────────────────────
+# OUP RSS 为静态当期期号 feed，改用 CrossRef
 CROSSREF_JOURNALS = [
-    ("American Economic Review",               "0002-8282"),
-    ("The Review of Economics and Statistics", "0034-6535"),
-    # OUP RSS 为静态当期期号 feed，改用 CrossRef
-    ("The Quarterly Journal of Economics",     "0033-5533"),
-    ("The Review of Economic Studies",         "0034-6527"),
+    ("American Economic Review", "0002-8282"),
+    ("The Quarterly Journal of Economics", "0033-5533"),
+    ("The Review of Economic Studies", "0034-6527"),
 ]
 
 # ── 配置（从环境变量读取）────────────────────────────────────────────────────
 STATE_DIR        = Path(__file__).resolve().parent / "state"
-SEEN_FILE        = STATE_DIR / "seen_jiahuitan.json"
-FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_jiahuitan.json"
-LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_jiahuitan.json"
+SEEN_FILE        = STATE_DIR / "seen_yin.json"
+FAIL_COUNTS_FILE = STATE_DIR / "fail_counts_yin.json"
+LAST_SEEN_BY_JOURNAL_FILE = STATE_DIR / "last_seen_by_journal_yin.json"
 SMTP_HOST        = "smtp.163.com"
 SMTP_PORT        = 465
 SENDER           = os.environ["EMAIL_SENDER"]
 PASSWORD         = os.environ["EMAIL_PASSWORD"]
-RECIPIENT        = os.environ["EMAIL_RECIPIENT_JIAHUITAN"]
+RECIPIENT        = os.environ["EMAIL_RECIPIENT_YIN"]
 ALERT_RECIPIENT  = os.environ.get("EMAIL_ALERT", "")
 FAIL_THRESHOLD   = 5
-SCRIPT_NAME      = "jiahuitan"
-START_DATE       = date(2026, 3, 30)   # 第1期发送日期，用于计算期号
+SCRIPT_NAME      = "yin"
+START_DATE       = date(2026, 4, 20)   # 第1期发送日期，用于计算期号
 
 TEST_MODE = "--test" in sys.argv
 TOP5_JOURNAL_NAMES = top5_tracker.TOP5_JOURNAL_NAMES
@@ -103,7 +95,7 @@ def save_journal_watermarks(data: dict):
 def _max_date_in_items(items: list) -> str:
     max_date = ""
     for a in items:
-        m = re.search(r"\b\d{4}-\d{2}-\d{2}\b", a.get("date", ""))
+        m = re.search(r"\b\d{4}-\d{2}-\d{2}\b", a.get("date_key", "") or a.get("date", ""))
         if m:
             d = m.group(0)
             if d > max_date:
@@ -137,6 +129,119 @@ def update_journal_watermarks(articles: dict):
     save_journal_watermarks(watermarks)
 
 
+def _is_nber_regional_working_paper(entry, title: str, summary: str) -> bool:
+    text = f"{title} {summary}".lower()
+    keywords = [
+        # 城市结构与空间
+        "urban", "city", "cities", "metropolitan", "spatial",
+        "agglomeration", "suburbanization", "sprawl", "density",
+        # 土地与住房
+        "housing", "real estate", "land use", "zoning",
+        "land value", "rent control", "gentrification",
+        # 劳动与人口流动
+        "commuting", "internal migration", "urban wage premium",
+        # 交通
+        "transportation infrastructure", "transit",
+        # 政策
+        "place-based", "local government", "intergovernmental",
+        # 方法/领域词
+        "regional", "economic geography", "quantitative spatial",
+    ]
+    is_wp = "/papers/w" in entry.get("link", "").lower()
+    return is_wp and any(k in text for k in keywords)
+
+
+def _split_nber_title_authors(title: str) -> tuple[str, str]:
+    """NBER RSS 把作者拼在标题后：Title -- by Author A, Author B。"""
+    m = re.match(r"^(.*?)\s+--\s+by\s+(.+)$", title or "", flags=re.IGNORECASE)
+    if not m:
+        return title or "", ""
+    return m.group(1).strip(), m.group(2).strip()
+
+
+def _normalize_date_str(raw: str) -> str:
+    """将常见日期文本标准化为 YYYY-MM-DD；无法解析则原样返回。"""
+    s = (raw or "").strip()
+    if not s:
+        return ""
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+        return s
+    m = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", s)
+    if m:
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    # ScienceDirect 常见: May 2026 / March 2026
+    for fmt in ("%B %Y", "%b %Y"):
+        try:
+            dt = datetime.strptime(s, fmt)
+            # 月份粒度时，使用月末作为代表日期，避免 21 天窗口误排除
+            last_day = calendar.monthrange(dt.year, dt.month)[1]
+            return f"{dt.year:04d}-{dt.month:02d}-{last_day:02d}"
+        except ValueError:
+            pass
+    # NBER 页面常见: April 2026
+    m = re.search(r"\b([A-Za-z]+)\s+(\d{4})\b", s)
+    if m:
+        for fmt in ("%B %Y", "%b %Y"):
+            try:
+                dt = datetime.strptime(f"{m.group(1)} {m.group(2)}", fmt)
+                last_day = calendar.monthrange(dt.year, dt.month)[1]
+                return f"{dt.year:04d}-{dt.month:02d}-{last_day:02d}"
+            except ValueError:
+                pass
+    return s
+
+
+def _fetch_nber_publication_date(link: str) -> str:
+    """从 NBER 论文页面提取发布日期并返回 YYYY-MM-DD。"""
+    if not link:
+        return ""
+    try:
+        req = urllib.request.Request(
+            link,
+            headers={"User-Agent": "journal-tracker/1.0 (mailto:research@example.com)"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            page = resp.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+    # 优先使用页面 meta 中的精确发布日期
+    for pat in (
+        r'citation_publication_date"\s+content="([^"]+)"',
+        r'property="article:published_time"\s+content="([^"]+)"',
+        r'name="DC\.Date"\s+content="([^"]+)"',
+    ):
+        m = re.search(pat, page, re.IGNORECASE)
+        if m:
+            d = _normalize_date_str(m.group(1).strip())
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+                return d
+
+    # 兜底：页面中的 Issue Date <time datetime="...">
+    m = re.search(r'Issue Date.*?<time\s+datetime="([^"]+)"', page, re.IGNORECASE | re.DOTALL)
+    if m:
+        d = _normalize_date_str(m.group(1)[:10])
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+            return d
+
+    m = re.search(r'Issue Date[^<]{0,80}([A-Za-z]+\s+\d{4})', page, re.IGNORECASE)
+    if m:
+        d = _normalize_date_str(m.group(1))
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+            return d
+    return ""
+
+
+def _within_window(date_key: str, cutoff: datetime) -> bool:
+    if not date_key:
+        return True
+    try:
+        item_date = datetime.strptime(date_key[:10], "%Y-%m-%d")
+    except ValueError:
+        return True
+    return item_date >= cutoff.replace(tzinfo=None)
+
+
 # ── 抓取 RSS ──────────────────────────────────────────────────────────────────
 def fetch_rss(seen: set, exclude_names=None) -> tuple:
     results, errors = {}, {}
@@ -154,7 +259,8 @@ def fetch_rss(seen: set, exclude_names=None) -> tuple:
                     continue
                 published = entry.get("published_parsed") or entry.get("updated_parsed")
                 pub_str = datetime(*published[:3]).strftime("%Y-%m-%d") if published else ""
-                # 跳过 7 天前的文章
+                date_key = pub_str
+                # 跳过窗口外文章
                 if published and datetime(*published[:6]) < cutoff.replace(tzinfo=None):
                     continue
                 authors = ""
@@ -163,6 +269,7 @@ def fetch_rss(seen: set, exclude_names=None) -> tuple:
                 elif hasattr(entry, "author"):
                     authors = entry.author
                 summary = re.sub(r"<[^>]+>", "", entry.get("summary", "")).strip()
+                date_display = pub_str
                 # ScienceDirect RSS 不含标准作者/日期字段，从 summary 元数据中提取
                 if "sciencedirect.com" in entry.get("link", ""):
                     if not authors:
@@ -173,14 +280,40 @@ def fetch_rss(seen: set, exclude_names=None) -> tuple:
                         m = re.search(r'Publication date:\s*(.+?)Source:', summary)
                         if m:
                             pub_str = m.group(1).strip()
+                            date_display = pub_str  # 保留原始"May 2026"格式
+                            date_key = _normalize_date_str(pub_str)
+                if name == "NBER Working Papers (Regional Economics)":
+                    if not _is_nber_regional_working_paper(entry, entry.get("title", ""), summary):
+                        continue
+                    nber_title, nber_authors = _split_nber_title_authors(entry.get("title", ""))
+                    if nber_authors:
+                        authors = nber_authors
+                    # NBER RSS 常无日期字段，优先抓页面发布日期，失败再用抓取日期
+                    if not pub_str:
+                        pub_str = _fetch_nber_publication_date(entry.get("link", ""))
+                        if not pub_str:
+                            pub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                        date_key = _normalize_date_str(pub_str)
+                    # NBER 页面日期为月份粒度（"May 2026"），还原显示格式
+                    try:
+                        dt = datetime.strptime(date_key[:7], "%Y-%m")
+                        date_display = dt.strftime("%B %Y")
+                    except ValueError:
+                        date_display = pub_str
+
+                if not published and not _within_window(date_key, cutoff):
+                    continue
+
                 new_items.append({
-                    "title":    entry.get("title", "(no title)").strip(),
-                    "link":     entry.get("link", "").replace("?af=R", ""),
-                    "authors":  authors,
-                    "abstract": summary,
-                    "date":     pub_str,
-                    "uid":      uid,
-                    "doi":      entry.get("prism_doi", ""),
+                    "title":        nber_title if name == "NBER Working Papers (Regional Economics)" else entry.get("title", "(no title)").strip(),
+                    "link":         entry.get("link", "").replace("?af=R", ""),
+                    "authors":      authors,
+                    "abstract":     summary,
+                    "date":         pub_str,
+                    "date_display": date_display,
+                    "date_key":     date_key,
+                    "uid":          uid,
+                    "doi":          entry.get("prism_doi", ""),
                 })
             if new_items:
                 results[name] = new_items
@@ -228,9 +361,19 @@ def fetch_crossref(seen: set, exclude_names=None) -> tuple:
                 abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
                 pd = item.get("published", {}).get("date-parts", [[]])[0]
                 pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
+                if len(pd) >= 3:
+                    date_display = pub_str  # 有精确日期，直接用 YYYY-MM-DD
+                elif len(pd) == 2:
+                    try:
+                        date_display = datetime(pd[0], pd[1], 1).strftime("%B %Y")
+                    except (ValueError, TypeError):
+                        date_display = pub_str
+                else:
+                    date_display = pub_str
                 new_items.append({
                     "title": title, "link": link, "authors": authors,
-                    "abstract": abstract, "date": pub_str, "uid": uid,
+                    "abstract": abstract, "date": pub_str, "date_display": date_display,
+                    "date_key": pub_str, "uid": uid,
                 })
             if new_items:
                 results[name] = new_items
@@ -337,7 +480,7 @@ def enrich_abstracts(articles: dict):
 
 
 # ── Issue 目录追踪 ────────────────────────────────────────────────────────────
-ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_jiahuitan.json"
+ISSUE_STATE_FILE = STATE_DIR / "last_seen_issues_yin.json"
 
 
 def load_issue_state() -> dict:
@@ -391,7 +534,7 @@ def build_html(articles: dict, week_str: str, issue_sections: dict = None) -> st
         for a in with_abs + without_abs:
             title = _html_text(a.get("title", "(no title)"))
             link = _html_attr(a.get("link", ""))
-            date = _html_text(a.get("date", ""))
+            date = _html_text(a.get("date_display") or a.get("date", ""))
             authors = _html_text(a.get("authors", ""), max_len=420)
             abstract = _html_text(a.get("abstract", "")) if _is_real_abstract(a.get("abstract", "")) else ""
             rows += f"""
@@ -593,7 +736,7 @@ def main(shared_top5_articles=None, shared_top5_article_errors=None, shared_top5
     week_str  = datetime.now(timezone.utc).strftime("Week of %Y-%m-%d")
     issue_num = (datetime.now(timezone.utc).date() - START_DATE).days // 7 + 1
     mode_label = "【测试模式·全量】" if TEST_MODE else "【增量模式】"
-    print(f"=== jiahuitan tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
+    print(f"=== yin tracker · {week_str} · 第{issue_num}期 · {mode_label} ===")
 
     seen        = set() if TEST_MODE else load_seen()
     fail_counts = load_fail_counts()
