@@ -4,6 +4,18 @@
 
 ## 2026-05-04
 
+### 第二阶段代码整理：抽取公共核心执行器
+
+五个预设脚本（`journal_tracker.py`、`xu.py`、`huang.py`、`tan.py`、`yin.py`）此前各自维护一份完整的抓取、摘要补充、HTML 渲染、发信、状态持久化逻辑，任何一处改动都需要同步修改五次。
+
+本次新增 `tracker_core.py`，将所有公共函数统一收口，五个入口文件改为薄包装——顶部只保留期刊列表和 `TrackerConfig` 配置对象，底部一行 `run_tracker(CONFIG)` 调用。各脚本特有逻辑（`huang` 的 PNAS 作者清洗和摘要元数据过滤、`yin` 的 NBER 过滤与日期解析）通过配置扩展点（`extra_abstract_filter`、`per_entry_transform`）保留在各自文件中。
+
+状态文件路径由 `script_name` 自动生成，与现有文件名完全一致，所有历史缓存（`seen_*.json`、`fail_counts_*.json`、`last_seen_by_journal_*.json`、`last_seen_issues_*.json`）在重构前后无需迁移。
+
+同时新增 `--preview` 本地预览模式：全量抓取，在脚本目录生成 `preview_<script_name>.html`，不发信，不写缓存，用于本地验证邮件格式而不打扰收件人。
+
+新增预设的流程从此改为：复制任意一个入口文件，修改顶部期刊列表和 `CONFIG` 字段，无需理解核心逻辑。
+
 ### 第一阶段去身份化整理
 
 公开仓库此前直接暴露了附加脚本的全名拼音命名，以及与之对应的 README、workflow 输入名、状态文件名和 Secret 名说明。这种写法虽然方便内部维护，但对公开仓库来说信息暴露过于直接，外部用户看到后也容易把项目理解成几份私人脚本的并排集合。
