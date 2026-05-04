@@ -59,10 +59,10 @@ jobs:
           EMAIL_SENDER:             ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD:           ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECIPIENT:          ${{ secrets.EMAIL_RECIPIENT }}
-          EMAIL_RECIPIENT_XU:       ${{ secrets.EMAIL_RECIPIENT_XU }}
-          EMAIL_RECIPIENT_HUANG:    ${{ secrets.EMAIL_RECIPIENT_HUANG }}
-          EMAIL_RECIPIENT_TAN:      ${{ secrets.EMAIL_RECIPIENT_TAN }}
-          EMAIL_RECIPIENT_YIN:      ${{ secrets.EMAIL_RECIPIENT_YIN }}
+          EMAIL_RECIPIENT_XU:       ${{ secrets.EMAIL_RECIPIENT_XU != '' && secrets.EMAIL_RECIPIENT_XU || secrets.EMAIL_RECIPIENT_YIFAN }}
+          EMAIL_RECIPIENT_HUANG:    ${{ secrets.EMAIL_RECIPIENT_HUANG != '' && secrets.EMAIL_RECIPIENT_HUANG || secrets.EMAIL_RECIPIENT_HAIHUANG }}
+          EMAIL_RECIPIENT_TAN:      ${{ secrets.EMAIL_RECIPIENT_TAN != '' && secrets.EMAIL_RECIPIENT_TAN || secrets.EMAIL_RECIPIENT_JIAHUITAN }}
+          EMAIL_RECIPIENT_YIN:      ${{ secrets.EMAIL_RECIPIENT_YIN != '' && secrets.EMAIL_RECIPIENT_YIN || secrets.EMAIL_RECIPIENT_SHANGYIN }}
           EMAIL_ALERT:              ${{ secrets.EMAIL_ALERT }}
           RUN_MAIN:                 ${{ github.event_name == 'schedule' || inputs.run_main == true }}
           RUN_XU:                   ${{ github.event_name == 'schedule' || inputs.run_xu == true }}
