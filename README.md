@@ -72,28 +72,22 @@
 
 ### 第三步：配置 GitHub Secrets
 
-进入你的 Fork 仓库 → **Settings → Secrets and variables → Actions → New repository secret**，添加以下 Secret（附加预设 Secret 按需添加）：
+进入你的 Fork 仓库 → **Settings → Secrets and variables → Actions → New repository secret**，添加以下 Secret：
 
 | Secret 名称 | 填写内容 | 必填 |
 |---|---|---|
 | `EMAIL_SENDER` | 163 邮箱地址，如 `yourname@163.com` | 是 |
 | `EMAIL_PASSWORD` | 第二步获得的 SMTP 授权码 | 是 |
 | `EMAIL_RECIPIENT` | 主程序收件地址，多地址用英文逗号分隔 | 是 |
-| `EMAIL_RECIPIENT_XU` | xu 预设收件地址 | 使用该预设时 |
-| `EMAIL_RECIPIENT_HUANG` | huang 预设收件地址 | 使用该预设时 |
-| `EMAIL_RECIPIENT_TAN` | tan 预设收件地址 | 使用该预设时 |
-| `EMAIL_RECIPIENT_YIN` | yin 预设收件地址（例如 `friendname@example.com`） | 使用该预设时 |
 | `EMAIL_ALERT` | RSS 失效告警收件地址 | 启用告警功能时 |
 
 ### 第四步：手动触发一次测试
 
 进入仓库 → **Actions → Weekly Journal Digest → Run workflow**
 
-弹出面板中可勾选要运行的脚本。**首次建议只勾选主程序（`run_main`），其余预设取消勾选**，点击 **Run workflow** 触发。约 30 秒后检查邮箱（注意垃圾邮件文件夹）。收到邮件即主程序部署成功。
+弹出面板中可勾选要运行的脚本。**首次只勾选 `run_main`**，点击 **Run workflow** 触发。约 30 秒后检查邮箱（注意垃圾邮件文件夹）。收到邮件即部署成功。
 
-> **注意：** 每个预设脚本都必须在 Secrets 中配置对应的收件人变量（如 `EMAIL_RECIPIENT_XU`），否则运行时会因读不到环境变量而报错。未配置 Secret 的预设，触发时务必取消对应的勾选。
-
-> 手动触发时可只勾选某个脚本单独运行，方便调试或补发。
+> 面板中其余勾选项对应仓库内的个人定制版本脚本，外部用户取消勾选即可，不影响主程序运行。
 
 ---
 
