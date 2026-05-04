@@ -31,20 +31,14 @@
 
 | 文件 | 说明 | 期刊数 |
 |------|------|--------|
-| `run_all_trackers.py` | **统一入口**，每周正式运行时先抓一次五大刊公共内容，再依次调度主程序和各可选预设 | - |
+| `run_all_trackers.py` | **统一入口**，每周正式运行时先抓一次五大刊公共内容，再依次调度主程序和各定制版本 | - |
 | `top5_tracker.py` | **公共模块**，负责五大刊（AER、QJE、JPE、Econometrica、REStud）的近期新文章抓取与最新一期目录抓取 | 5 |
-| `tracker_core.py` | **核心执行器**，包含所有公共逻辑（抓取、摘要补充、HTML 渲染、发信、状态持久化）；各预设脚本通过配置调用，不重复维护 | - |
+| `tracker_core.py` | **核心执行器**，包含所有公共逻辑（抓取、摘要补充、HTML 渲染、发信、状态持久化） | - |
 | `journal_tracker.py` | **主程序**，覆盖经济/金融/经济史等领域期刊，并消费公共五大刊内容 | 16 |
-| `xu.py` | 可选预设，聚焦较窄的核心经济学期刊，并消费公共五大刊内容 | 8 |
-| `huang.py` | 可选预设，覆盖更宽的经济/社会/政治/金融/经济史来源，并消费公共五大刊内容 | 26 |
-| `tan.py` | 可选预设，覆盖经济/公共/卫生经济学等领域期刊，并消费公共五大刊内容 | 15 |
-| `yin.py` | 可选预设，聚焦经济学 Top 5、城市经济与区域经济工作论文，并消费公共五大刊内容 | 7 |
 
-各脚本独立维护缓存文件，互不干扰。缓存和失败计数文件统一放在 `state/` 目录，由 GitHub Actions 自动更新。附加预设只是示例，Fork 后可按需删除、修改或新增。
+仓库中还包含若干个人定制版本（`xu.py`、`huang.py`、`tan.py`、`yin.py`），各自针对不同期刊范围和收件人，与主程序独立运行、互不干扰。
 
-日常周报由 `run_all_trackers.py` 统一调度。五大刊的近期新文章抓取和最新一期目录抓取会在每次运行时先统一执行一次，再分别对照各脚本自己的缓存文件判断”是否已推送”。这样既保留了各脚本独立的收件人、缓存和发信逻辑，也避免对五大刊重复请求。各单独脚本仍可直接运行，适合本地调试或后续扩展。
-
-**新增预设**：复制任意一个预设文件，修改顶部的 `JOURNALS`、`CROSSREF_JOURNALS` 和 `CONFIG` 字段，再接入 `run_all_trackers.py` 和 `weekly_digest.yml` 的输入开关即可，无需了解核心执行逻辑。
+日常周报由 `run_all_trackers.py` 统一调度。五大刊内容每次运行只抓取一次，再分别对照各脚本自己的缓存文件判断是否已推送，避免重复请求。
 
 ---
 
@@ -206,5 +200,5 @@ python journal_tracker.py --preview
 **Q：如何只保留自己关注的期刊？**
 直接编辑 `journal_tracker.py`，删除不需要的行后提交即可。
 
-**Q：如何添加自己的附加预设？**
-复制任意一个预设文件，修改顶部的 `JOURNALS`、`CROSSREF_JOURNALS` 和 `CONFIG`（`script_name`、`env_recipient`、`start_date`），再把新脚本接入 `run_all_trackers.py` 和 `weekly_digest.yml` 的输入开关即可。所有抓取和发信逻辑由 `tracker_core.py` 自动处理，不需要改动。
+**Q：如何创建自己的定制版本？**
+复制 `journal_tracker.py`，修改顶部的 `JOURNALS`、`CROSSREF_JOURNALS` 和 `CONFIG`（`script_name`、`env_recipient`、`start_date`），再把新脚本接入 `run_all_trackers.py` 和 `weekly_digest.yml` 的输入开关即可。所有抓取和发信逻辑由 `tracker_core.py` 自动处理，不需要改动。
