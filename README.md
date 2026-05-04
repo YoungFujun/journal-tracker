@@ -85,7 +85,7 @@
 | `EMAIL_RECIPIENT_YIFAN` | yifanxu 子程序收件地址 | 使用该子程序时 |
 | `EMAIL_RECIPIENT_HAIHUANG` | haihuang 子程序收件地址 | 使用该子程序时 |
 | `EMAIL_RECIPIENT_JIAHUITAN` | jiahuitan 子程序收件地址 | 使用该子程序时 |
-| `EMAIL_RECIPIENT_SHANGYIN` | shangyin 子程序收件地址（例如 `yinshang@ruc.edu.cn`） | 使用该子程序时 |
+| `EMAIL_RECIPIENT_SHANGYIN` | shangyin 子程序收件地址（例如 `shangyin@example.com`） | 使用该子程序时 |
 | `EMAIL_ALERT` | RSS 失效告警收件地址 | 启用告警功能时 |
 
 ### 第四步：手动触发一次测试
