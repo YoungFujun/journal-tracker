@@ -1,51 +1,51 @@
 {
   "Journal of Political Economy": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:41Z",
+    "last_run_utc": "2026-05-04T04:39:41Z",
     "new_count": 0,
     "last_article_date": "2026-05-01",
     "last_updated_run_utc": "2026-05-04T02:48:53Z"
   },
   "Econometrica": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:41Z",
+    "last_run_utc": "2026-05-04T04:39:41Z",
     "new_count": 0,
     "last_article_date": "2026-04-01",
     "last_updated_run_utc": "2026-04-20T16:12:59Z"
   },
   "Journal of Urban Economics": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:41Z",
+    "last_run_utc": "2026-05-04T04:39:41Z",
     "new_count": 0,
     "last_article_date": "2026-05-31",
     "last_updated_run_utc": "2026-05-04T02:48:53Z"
   },
   "NBER Working Papers (Regional Economics)": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:41Z",
-    "new_count": 0,
-    "last_article_date": "2026-04-27",
-    "last_updated_run_utc": "2026-04-27T04:31:20Z"
+    "last_run_utc": "2026-05-04T04:39:41Z",
+    "new_count": 12,
+    "last_article_date": "2026-05-04",
+    "last_updated_run_utc": "2026-05-04T04:39:41Z"
   },
   "American Economic Review": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:41Z",
-    "new_count": 0,
-    "last_article_date": "2026-04-01",
-    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+    "last_run_utc": "2026-05-04T04:39:41Z",
+    "new_count": 1,
+    "last_article_date": "2026-05-01",
+    "last_updated_run_utc": "2026-05-04T04:39:41Z"
   },
   "The Quarterly Journal of Economics": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:41Z",
+    "last_run_utc": "2026-05-04T04:39:41Z",
     "new_count": 0,
     "last_article_date": "2026-04-24",
     "last_updated_run_utc": "2026-04-27T04:31:20Z"
   },
   "The Review of Economic Studies": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:41Z",
-    "new_count": 0,
-    "last_article_date": "2026-04-21",
-    "last_updated_run_utc": "2026-04-27T04:31:20Z"
+    "last_run_utc": "2026-05-04T04:39:41Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-30",
+    "last_updated_run_utc": "2026-05-04T04:39:41Z"
   }
 }

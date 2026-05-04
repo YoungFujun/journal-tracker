@@ -1,58 +1,58 @@
 {
   "Journal of Political Economy": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "2026-05-01",
     "last_updated_run_utc": "2026-05-04T02:47:46Z"
   },
   "Econometrica": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "",
     "last_updated_run_utc": ""
   },
   "Journal of Labor Economics": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "",
     "last_updated_run_utc": ""
   },
   "Journal of Development Economics": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "",
     "last_updated_run_utc": "2026-05-04T02:47:46Z"
   },
   "Journal of Human Resources": {
     "source": "rss",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "",
     "last_updated_run_utc": ""
   },
   "American Economic Review": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:22Z",
-    "new_count": 0,
-    "last_article_date": "",
-    "last_updated_run_utc": ""
+    "last_run_utc": "2026-05-04T04:39:20Z",
+    "new_count": 1,
+    "last_article_date": "2026-05-01",
+    "last_updated_run_utc": "2026-05-04T04:39:20Z"
   },
   "The Quarterly Journal of Economics": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:22Z",
+    "last_run_utc": "2026-05-04T04:39:20Z",
     "new_count": 0,
     "last_article_date": "2026-04-24",
     "last_updated_run_utc": "2026-04-27T04:30:10Z"
   },
   "The Review of Economic Studies": {
     "source": "crossref",
-    "last_run_utc": "2026-05-04T03:17:22Z",
-    "new_count": 0,
-    "last_article_date": "2026-04-21",
-    "last_updated_run_utc": "2026-04-27T04:30:10Z"
+    "last_run_utc": "2026-05-04T04:39:20Z",
+    "new_count": 2,
+    "last_article_date": "2026-04-30",
+    "last_updated_run_utc": "2026-05-04T04:39:20Z"
   }
 }
