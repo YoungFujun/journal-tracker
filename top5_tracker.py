@@ -1,8 +1,11 @@
 import json
+import html
 import re
 import time
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
 
 import feedparser
 
@@ -34,6 +37,226 @@ SKIP_TITLE_PATTERNS = re.compile(
     r"|annual\s*report|report\s*of\s*the\s*secretary|report\s*of\s*the\s*treasurer)\b",
     re.IGNORECASE,
 )
+
+OUP_OFFICIAL_ISSUE_SOURCES = {
+    "The Quarterly Journal of Economics": {
+        "journal_name": "The Quarterly Journal of Economics",
+        "issue_url": "https://academic.oup.com/qje/issue",
+    },
+    "The Review of Economic Studies": {
+        "journal_name": "The Review of Economic Studies",
+        "archive_url": "https://academic.oup.com/restud/issue-archive/2026",
+        "issue_url_template": "https://academic.oup.com/restud/issue/{volume}/{issue}",
+    },
+}
+
+
+class _HTMLTextExtractor(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in {"script", "style"}:
+            self._skip_depth += 1
+            return
+        if self._skip_depth:
+            return
+        if tag in {"br", "p", "div", "li", "ul", "ol", "section", "article", "tr", "td", "h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in {"script", "style"} and self._skip_depth:
+            self._skip_depth -= 1
+            return
+        if self._skip_depth:
+            return
+        if tag in {"p", "div", "li", "ul", "ol", "section", "article", "tr", "td", "h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if not self._skip_depth and data:
+            self.parts.append(data)
+
+
+def _fetch_text(url: str, retries: int = 4, base_sleep: float = 1.5) -> str:
+    last_error = None
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                charset = resp.headers.get_content_charset() or "utf-8"
+                return resp.read().decode(charset, errors="replace")
+        except Exception as e:
+            last_error = e
+            retryable = "429" in str(e) or "timed out" in str(e).lower()
+            if retryable and attempt < retries - 1:
+                time.sleep(base_sleep * (attempt + 1))
+                continue
+            raise last_error
+    raise last_error
+
+
+def _html_to_lines(raw_html: str):
+    parser = _HTMLTextExtractor()
+    parser.feed(raw_html)
+    text = html.unescape("".join(parser.parts))
+    lines = []
+    for raw in text.splitlines():
+        line = re.sub(r"\s+", " ", raw).strip()
+        if line:
+            lines.append(line)
+    return lines
+
+
+def _clean_html_fragment(fragment: str) -> str:
+    text = re.sub(r"<[^>]+>", " ", fragment)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_anchors(raw_html: str, href_pattern: str = None):
+    anchors = []
+    for href, inner in re.findall(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', raw_html, flags=re.I | re.S):
+        if href_pattern and href_pattern not in href:
+            continue
+        text = _clean_html_fragment(inner)
+        if text:
+            anchors.append((text, href))
+    return anchors
+
+
+def _safe_issue_sort_key(volume: str, issue: str):
+    def _to_int(value: str):
+        match = re.search(r"\d+", str(value))
+        return int(match.group()) if match else -1
+
+    return (_to_int(volume), _to_int(issue), str(volume), str(issue))
+
+
+def _find_line_index(lines, target: str, start: int = 0):
+    for idx in range(start, len(lines)):
+        if lines[idx] == target:
+            return idx
+    return -1
+
+
+def _parse_aer_current_issue():
+    raw_html = _fetch_text("https://www.aeaweb.org/journals/aer/current-issue")
+    lines = _html_to_lines(raw_html)
+    joined = "\n".join(lines)
+    match = re.search(r"Vol\.\s*(\d+),\s*No\.\s*(\d+)", joined)
+    if not match:
+        raise ValueError("AER current issue volume/issue not found")
+    volume, issue = match.group(1), match.group(2)
+
+    anchors = []
+    seen_titles = set()
+    for title, href in _extract_anchors(raw_html, "/articles?id="):
+        if title in seen_titles or SKIP_TITLE_PATTERNS.search(title):
+            continue
+        seen_titles.add(title)
+        anchors.append((title, urllib.parse.urljoin("https://www.aeaweb.org", href)))
+
+    start_idx = _find_line_index(lines, f"Vol. {volume}, No. {issue}", 0)
+    search_start = start_idx if start_idx >= 0 else 0
+    articles = []
+    for title, link in anchors:
+        idx = _find_line_index(lines, title, search_start)
+        if idx < 0:
+            continue
+        authors = ""
+        for probe in range(idx + 1, min(idx + 5, len(lines))):
+            if lines[probe].startswith("by "):
+                authors = lines[probe][3:].strip()
+                break
+        doi = urllib.parse.parse_qs(urllib.parse.urlparse(link).query).get("id", [""])[0]
+        articles.append({
+            "title": title,
+            "link": link,
+            "authors": authors,
+            "abstract": "",
+            "date": "",
+            "doi": doi,
+        })
+        search_start = idx + 1
+
+    if not articles:
+        raise ValueError("AER current issue articles not found")
+
+    return {
+        "volume": volume,
+        "issue": issue,
+        "articles": articles,
+    }
+
+
+def _parse_oup_issue_page(journal_name: str, issue_url: str):
+    raw_html = _fetch_text(issue_url)
+    lines = _html_to_lines(raw_html)
+    citation_re = re.compile(
+        rf"{re.escape(journal_name)}, Volume (?P<volume>\d+), Issue (?P<issue>[^,]+), .*?https://doi\.org/(?P<doi>\S+)",
+        re.I,
+    )
+
+    articles = []
+    volume, issue = None, None
+    for idx, line in enumerate(lines):
+        match = citation_re.search(line)
+        if not match or idx < 2:
+            continue
+        title = lines[idx - 2]
+        authors = lines[idx - 1]
+        if SKIP_TITLE_PATTERNS.search(title):
+            continue
+        doi = match.group("doi").rstrip(".,;)")
+        volume = volume or match.group("volume")
+        issue = issue or match.group("issue")
+        articles.append({
+            "title": title,
+            "link": f"https://doi.org/{doi}",
+            "authors": authors,
+            "abstract": "",
+            "date": "",
+            "doi": doi,
+        })
+
+    if not volume or not issue or not articles:
+        raise ValueError(f"{journal_name} official issue page parse failed")
+
+    return {
+        "volume": volume,
+        "issue": issue,
+        "articles": articles,
+    }
+
+
+def _resolve_restud_latest_issue_url():
+    raw_html = _fetch_text(OUP_OFFICIAL_ISSUE_SOURCES["The Review of Economic Studies"]["archive_url"])
+    lines = _html_to_lines(raw_html)
+    best = None
+    for line in lines:
+        match = re.search(r"Volume (\d+), Issue ([^,]+),", line)
+        if not match:
+            continue
+        candidate = (match.group(1), match.group(2))
+        if best is None or _safe_issue_sort_key(*candidate) > _safe_issue_sort_key(*best):
+            best = candidate
+    if best is None:
+        raise ValueError("REStud archive latest issue not found")
+    return OUP_OFFICIAL_ISSUE_SOURCES["The Review of Economic Studies"]["issue_url_template"].format(
+        volume=best[0],
+        issue=best[1],
+    )
 
 
 def _fetch_json(url: str, retries: int = 4, base_sleep: float = 1.5):
@@ -130,7 +353,7 @@ def fetch_top5_recent_articles(cutoff_days: int = 21):
     return results, errors
 
 
-def fetch_top5_latest_issues():
+def _fetch_top5_latest_issues_crossref():
     issue_payload, errors = {}, {}
     for name, issn in TOP5_ISSUE_JOURNALS:
         try:
@@ -199,6 +422,40 @@ def fetch_top5_latest_issues():
                 }
         except Exception as e:
             errors[name] = str(e)
+    return issue_payload, errors
+
+
+def fetch_top5_latest_issues():
+    issue_payload, errors = _fetch_top5_latest_issues_crossref()
+
+    official_fetchers = {
+        "American Economic Review": _parse_aer_current_issue,
+        "The Quarterly Journal of Economics": lambda: _parse_oup_issue_page(
+            OUP_OFFICIAL_ISSUE_SOURCES["The Quarterly Journal of Economics"]["journal_name"],
+            OUP_OFFICIAL_ISSUE_SOURCES["The Quarterly Journal of Economics"]["issue_url"],
+        ),
+        "The Review of Economic Studies": lambda: _parse_oup_issue_page(
+            OUP_OFFICIAL_ISSUE_SOURCES["The Review of Economic Studies"]["journal_name"],
+            _resolve_restud_latest_issue_url(),
+        ),
+    }
+
+    for name, fetcher in official_fetchers.items():
+        try:
+            official_info = fetcher()
+            current_info = issue_payload.get(name)
+            if current_info is None or _safe_issue_sort_key(
+                official_info["volume"],
+                official_info["issue"],
+            ) >= _safe_issue_sort_key(
+                current_info["volume"],
+                current_info["issue"],
+            ):
+                issue_payload[name] = official_info
+        except Exception as e:
+            if name not in issue_payload:
+                errors[name] = str(e)
+
     return issue_payload, errors
 
 
