@@ -187,8 +187,8 @@ def enrich_abstracts(articles: dict, extra_filter: Callable[[str], bool] | None 
                     abstract = _reconstruct_abstract(
                         json.loads(resp.read()).get("abstract_inverted_index")
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"    [OpenAlex enrich failed] {doi}: {e}")
             time.sleep(0.1)
             if not abstract:
                 try:
@@ -197,8 +197,8 @@ def enrich_abstracts(articles: dict, extra_filter: Callable[[str], bool] | None 
                         urllib.request.Request(url, headers=headers), timeout=10
                     ) as resp:
                         abstract = json.loads(resp.read()).get("abstract") or ""
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"    [Semantic Scholar enrich failed] {doi}: {e}")
                 time.sleep(0.5)
                 if abstract:
                     ss_n += 1
