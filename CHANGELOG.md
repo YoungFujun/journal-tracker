@@ -2,6 +2,14 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-05-25
+
+### 摘要补充失败原因输出到日志
+
+`tracker_core.py` 的 `enrich_abstracts()` 在调用 OpenAlex 和 Semantic Scholar 时，原本对两处网络请求均使用 `except Exception: pass` 静默吞掉异常。结果是某篇文章的摘要补充失败后，函数末尾汇总只会提示「X 篇未能补充」，但无法判断具体原因（超时、API 限流、DOI 找不到、JSON 解析错误等）。
+
+本次改动将两处 `except` 分别改为打印对应 DOI 与异常信息，并标记请求来源（OpenAlex / Semantic Scholar）。控制流不变，邮件渲染与发送行为不变；仅在摘要补充失败时，GitHub Actions 日志会多出一行可定位的失败记录。
+
 ## 2026-05-04
 
 ### 第二阶段代码整理：抽取公共核心执行器
