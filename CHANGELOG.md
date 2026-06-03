@@ -2,6 +2,18 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-06-03
+
+### huang 预设：暂停追踪非经济学期刊
+
+将 `huang.py` 中 7 个非经济学来源注释掉，保留原始 URL/ISSN 以便日后恢复：
+
+- 社会学（4 个）：American Sociological Review、Annual Review of Sociology、American Journal of Sociology（CrossRef）、Sociological Methods & Research（CrossRef）
+- 政治学（2 个）：American Journal of Political Science、American Political Science Review
+- 综合多学科（1 个）：PNAS
+
+追踪来源从 26 个降至 19 个，脚本覆盖范围收窄为经济/金融/经济史。
+
 ## 2026-05-25
 
 ### 摘要补充失败原因输出到日志
