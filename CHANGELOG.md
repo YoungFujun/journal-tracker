@@ -4,6 +4,24 @@
 
 ## 2026-06-03
 
+### 修复三处代码 bug
+
+**Bug 1 — 修复 Top5 期刊失败时触发重复告警邮件（`tracker_core.py`）**
+
+`run_tracker` 原先将 `shared_top5_article_errors`（Top5 公共抓取错误）并入各脚本自己的 `all_errors`，导致 AER/QJE 等期刊连续失败后，五个 tracker 各自计数、各自达到 `FAIL_THRESHOLD`，同一天向 `EMAIL_ALERT` 发出 5 封内容相同的告警邮件。
+
+修复：区分 `own_errors`（本脚本自己负责的 RSS/CrossRef 错误）与 Top5 共享错误，fail_counts 更新和告警触发只使用 `own_errors`。
+
+**Bug 2 — 修复 `previously_sent` 子串检查误判风险与性能问题（`top5_tracker.py`）**
+
+`select_issue_sections` 原先对每篇文章做 `any(doi_lower in s.lower() for s in seen)` 线性扫描（O(n)），`seen` 较大时性能差，且子串匹配可能把 DOI `10.1093/qje/qjab001` 误判为匹配了另一个包含此前缀的不同文章。
+
+修复：在函数入口预计算一次 `seen_lower`（全小写集合）和 `seen_dois`（从 URL 型条目中提取 DOI 的集合），之后每篇文章查询均为 O(1) 集合成员检测。
+
+**Bug 3 — 修复 Top5 CrossRef 文章 `date_display` 缺失（`top5_tracker.py`）**
+
+`fetch_top5_recent_articles` 的 CrossRef 分支未计算 `date_display`，导致 2 段日期（年-月）的文章在邮件中显示为 `"2026-06"` 而非 `"June 2026"`。补充与 `tracker_core.fetch_crossref` 相同的 `date_display` 和 `date_key` 计算逻辑。
+
 ### huang 预设：暂停追踪非经济学期刊
 
 将 `huang.py` 中 7 个非经济学来源注释掉，保留原始 URL/ISSN 以便日后恢复：

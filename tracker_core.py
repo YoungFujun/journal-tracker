@@ -618,16 +618,18 @@ def run_tracker(
     )
 
     enrich_abstracts(articles, cfg.extra_abstract_filter)
-    all_errors = {**rss_errors, **cr_errors, **(shared_top5_article_errors or {})}
+    # own_errors: 仅本脚本自己负责抓取的期刊错误，用于 fail_counts 和告警
+    # Top5 共享错误不计入各脚本计数，避免单次失败触发 5 封重复告警
+    own_errors = {**rss_errors, **cr_errors}
 
     if not test_mode and not preview_mode:
         all_names = [n for n, _ in cfg.journals] + [n for n, _ in cfg.crossref_journals]
         for name in all_names:
-            fail_counts[name] = fail_counts.get(name, 0) + 1 if name in all_errors else 0
+            fail_counts[name] = fail_counts.get(name, 0) + 1 if name in own_errors else 0
         save_fail_counts(cfg, fail_counts)
         triggered = {
-            name: (all_errors[name], fail_counts[name])
-            for name in all_errors
+            name: (own_errors[name], fail_counts[name])
+            for name in own_errors
             if fail_counts[name] == FAIL_THRESHOLD
         }
         if triggered:

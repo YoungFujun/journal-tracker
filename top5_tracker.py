@@ -336,12 +336,23 @@ def fetch_top5_recent_articles(cutoff_days: int = 21):
                 abstract = re.sub(r"<[^>]+>", "", item.get("abstract", "")).strip()
                 pd = item.get("published", {}).get("date-parts", [[]])[0]
                 pub_str = "-".join(str(p).zfill(2) for p in pd) if pd else ""
+                if len(pd) >= 3:
+                    date_display = pub_str
+                elif len(pd) == 2:
+                    try:
+                        date_display = datetime(pd[0], pd[1], 1).strftime("%B %Y")
+                    except (ValueError, TypeError):
+                        date_display = pub_str
+                else:
+                    date_display = pub_str
                 new_items.append({
                     "title": title,
                     "link": link,
                     "authors": authors,
                     "abstract": abstract,
                     "date": pub_str,
+                    "date_display": date_display,
+                    "date_key": pub_str,
                     "uid": uid,
                     "doi": uid,
                 })
@@ -471,11 +482,28 @@ def select_new_articles(public_articles: dict, seen: set, allowed_names=None):
     return selected
 
 
+_DOI_RE = re.compile(r'10\.\d{4,}/[^\s&?#"<>]+')
+
+
+def _extract_seen_dois(seen: set) -> set:
+    """从 seen 集合中提取所有可识别的 DOI（小写），供 O(1) 查询。"""
+    result = set()
+    for s in seen:
+        m = _DOI_RE.search(s.lower())
+        if m:
+            result.add(m.group(0).rstrip('.,;)'))
+    return result
+
+
 def select_issue_sections(public_issue_payload: dict, seen: set, state: dict, allowed_names=None):
     selected = {}
     new_issue_seen = set()
     updated_state = dict(state)
     allowed = set(allowed_names) if allowed_names is not None else None
+
+    # 预计算一次，避免对每篇文章做 O(n) 子串扫描
+    seen_lower = {s.lower() for s in seen}
+    seen_dois = _extract_seen_dois(seen)
 
     for name, info in public_issue_payload.items():
         if allowed is not None and name not in allowed:
@@ -489,9 +517,9 @@ def select_issue_sections(public_issue_payload: dict, seen: set, state: dict, al
         for article in info["articles"]:
             doi = article.get("doi", "")
             doi_lower = doi.lower()
-            previously_sent = (
-                doi in seen or doi_lower in seen or any(doi_lower in s.lower() for s in seen if doi_lower)
-            )
+            previously_sent = bool(doi_lower and (
+                doi_lower in seen_lower or doi_lower in seen_dois
+            ))
             if not previously_sent and doi:
                 new_issue_seen.add(doi)
             marked = dict(article)

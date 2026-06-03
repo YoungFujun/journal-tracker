@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 NOTES.md
+.venv/
 .venv311/
 .DS_Store
 preview_*.html
