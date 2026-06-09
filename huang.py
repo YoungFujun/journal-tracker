@@ -30,6 +30,7 @@ JOURNALS = [
     ("Journal of Population Economics",      "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=148&channel-name=Journal+of+Population+Economics"),
     ("Journal of Development Economics",     "https://rss.sciencedirect.com/publication/science/03043878"),
     ("Journal of Public Economics",          "https://rss.sciencedirect.com/publication/science/00472727"),
+    ("Journal of Economic Theory",                 "https://rss.sciencedirect.com/publication/science/00220531"),
     ("Journal of Economic Behavior and Organization", "https://rss.sciencedirect.com/publication/science/01672681"),
     ("The Economic Journal",                 "https://onlinelibrary.wiley.com/feed/14680297/most-recent"),
     # OUP 期刊（QJE、RES、RFS）改用 CrossRef，见下方

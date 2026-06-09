@@ -44,6 +44,7 @@
 
 ## 更新记录
 
+- **2026-06-09**：`huang.py` 新增 Journal of Economic Theory（Elsevier ScienceDirect RSS），来源从 19 个扩展至 20 个。
 - **2026-06-03**：修复三处 bug：Top5 期刊抓取失败时不再向所有脚本重复触发告警邮件；`previously_sent` 检查改为预计算集合查询，消除误判风险；Top5 CrossRef 文章补全 `date_display` 字段，2 段日期正确显示为"June 2026"。`huang.py` 暂停追踪 7 个非经济学期刊，来源从 26 个收窄至 19 个。
 - **2026-05-25**：摘要补充失败时输出原因到 Actions 日志（OpenAlex / Semantic Scholar 分别标记），便于排查个别文章摘要缺失。
 - **2026-05-04**：重构内部结构，将所有公共逻辑抽取到 `tracker_core.py`，各预设脚本改为薄包装（只保留期刊列表和配置），新增 `--preview` 本地预览模式（全量抓取，生成 HTML，不发信）。修正 Top 5 最新一期目录识别：AER、QJE、REStud 改为官网当前期页面优先、CrossRef 回退。
