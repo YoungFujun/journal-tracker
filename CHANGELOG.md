@@ -2,6 +2,12 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-06-09
+
+### huang.py 新增 Journal of Economic Theory
+
+将 Journal of Economic Theory（Elsevier，ISSN 0022-0531）加入 `huang.py` 的 `JOURNALS` 列表，使用 ScienceDirect RSS（`https://rss.sciencedirect.com/publication/science/00220531`），与其他 Elsevier 期刊格式一致。追踪来源从 19 个扩展至 20 个。
+
 ## 2026-06-03
 
 ### 修复三处代码 bug
