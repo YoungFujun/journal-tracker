@@ -34,8 +34,9 @@ journal-tracker/
 1. **同步文字描述**：凡涉及期刊数量、领域、功能的改动，须同步更新以下位置的对应描述：
    - 本文件（`CLAUDE.md`）的项目结构注释
    - `README.md` 的功能介绍、已收录期刊表、脚本说明表
-2. **记录进度**：将本次改动摘要追加到 `NOTES.md` 的「进度日志」章节（日期 + 改动要点）
-3. **推送 GitHub**：所有代码改动（`.py`、`.yml`、`README.md`、`CLAUDE.md`）必须提交并推送至 GitHub main 分支；`NOTES.md` 不推送（已加入 `.gitignore`）
+2. **更新 CHANGELOG.md**：将本次改动追加到 `CHANGELOG.md` 顶部（格式：`## YYYY-MM-DD` + `### 标题` + 说明段落）
+3. **记录进度**：将本次改动摘要追加到 `NOTES.md` 的「进度日志」章节（日期 + 改动要点）
+4. **推送 GitHub**：所有代码改动（`.py`、`.yml`、`README.md`、`CLAUDE.md`、`CHANGELOG.md`）必须提交并推送至 GitHub main 分支；`NOTES.md` 不推送（已加入 `.gitignore`）
 
 ### 提交规范
 
