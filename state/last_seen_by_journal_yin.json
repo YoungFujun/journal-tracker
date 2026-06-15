@@ -1,51 +1,51 @@
 {
   "Journal of Political Economy": {
     "source": "rss",
-    "last_run_utc": "2026-06-08T05:49:38Z",
+    "last_run_utc": "2026-06-15T06:22:42Z",
     "new_count": 0,
     "last_article_date": "2026-05-08",
     "last_updated_run_utc": "2026-05-11T04:59:12Z"
   },
   "Econometrica": {
     "source": "rss",
-    "last_run_utc": "2026-06-08T05:49:38Z",
-    "new_count": 0,
-    "last_article_date": "2026-04-01",
-    "last_updated_run_utc": "2026-04-20T16:12:59Z"
+    "last_run_utc": "2026-06-15T06:22:42Z",
+    "new_count": 17,
+    "last_article_date": "2026-06-08",
+    "last_updated_run_utc": "2026-06-15T06:22:42Z"
   },
   "Journal of Urban Economics": {
     "source": "rss",
-    "last_run_utc": "2026-06-08T05:49:38Z",
-    "new_count": 3,
+    "last_run_utc": "2026-06-15T06:22:42Z",
+    "new_count": 2,
     "last_article_date": "2026-08-31",
-    "last_updated_run_utc": "2026-06-08T05:49:38Z"
+    "last_updated_run_utc": "2026-06-15T06:22:42Z"
   },
   "NBER Working Papers (Regional Economics)": {
     "source": "rss",
-    "last_run_utc": "2026-06-08T05:49:38Z",
+    "last_run_utc": "2026-06-15T06:22:42Z",
     "new_count": 9,
-    "last_article_date": "2026-06-08",
-    "last_updated_run_utc": "2026-06-08T05:49:38Z"
+    "last_article_date": "2026-06-15",
+    "last_updated_run_utc": "2026-06-15T06:22:42Z"
   },
   "American Economic Review": {
     "source": "crossref",
-    "last_run_utc": "2026-06-08T05:49:38Z",
+    "last_run_utc": "2026-06-15T06:22:42Z",
     "new_count": 0,
     "last_article_date": "2026-06-01",
     "last_updated_run_utc": "2026-06-01T06:03:10Z"
   },
   "The Quarterly Journal of Economics": {
     "source": "crossref",
-    "last_run_utc": "2026-06-08T05:49:38Z",
-    "new_count": 1,
+    "last_run_utc": "2026-06-15T06:22:42Z",
+    "new_count": 0,
     "last_article_date": "2026-06-05",
     "last_updated_run_utc": "2026-06-08T05:49:38Z"
   },
   "The Review of Economic Studies": {
     "source": "crossref",
-    "last_run_utc": "2026-06-08T05:49:38Z",
+    "last_run_utc": "2026-06-15T06:22:42Z",
     "new_count": 4,
-    "last_article_date": "2026-06-05",
-    "last_updated_run_utc": "2026-06-08T05:49:38Z"
+    "last_article_date": "2026-06-11",
+    "last_updated_run_utc": "2026-06-15T06:22:42Z"
   }
 }
