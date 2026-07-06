@@ -1,57 +1,57 @@
 {
   "Journal of Political Economy": {
     "source": "rss",
-    "last_run_utc": "2026-06-29T05:49:20Z",
+    "last_run_utc": "2026-07-06T05:10:01Z",
     "new_count": 0,
     "last_article_date": "2026-05-08",
     "last_updated_run_utc": "2026-05-11T04:57:53Z"
   },
   "Econometrica": {
     "source": "rss",
-    "last_run_utc": "2026-06-29T05:49:20Z",
+    "last_run_utc": "2026-07-06T05:10:01Z",
     "new_count": 0,
     "last_article_date": "2026-06-08",
     "last_updated_run_utc": "2026-06-15T06:22:04Z"
   },
   "Journal of Labor Economics": {
     "source": "rss",
-    "last_run_utc": "2026-06-29T05:49:20Z",
+    "last_run_utc": "2026-07-06T05:10:01Z",
     "new_count": 0,
     "last_article_date": "2026-05-07",
     "last_updated_run_utc": "2026-05-11T04:57:53Z"
   },
   "Journal of Development Economics": {
     "source": "rss",
-    "last_run_utc": "2026-06-29T05:49:20Z",
+    "last_run_utc": "2026-07-06T05:10:01Z",
     "new_count": 0,
     "last_article_date": "",
     "last_updated_run_utc": "2026-06-22T06:31:03Z"
   },
   "Journal of Human Resources": {
     "source": "rss",
-    "last_run_utc": "2026-06-29T05:49:20Z",
-    "new_count": 6,
+    "last_run_utc": "2026-07-06T05:10:01Z",
+    "new_count": 0,
     "last_article_date": "2026-06-23",
     "last_updated_run_utc": "2026-06-29T05:49:20Z"
   },
   "American Economic Review": {
     "source": "crossref",
-    "last_run_utc": "2026-06-29T05:49:20Z",
-    "new_count": 0,
-    "last_article_date": "2026-06-01",
-    "last_updated_run_utc": "2026-06-01T06:01:55Z"
+    "last_run_utc": "2026-07-06T05:10:01Z",
+    "new_count": 15,
+    "last_article_date": "2026-07-01",
+    "last_updated_run_utc": "2026-07-06T05:10:01Z"
   },
   "The Quarterly Journal of Economics": {
     "source": "crossref",
-    "last_run_utc": "2026-06-29T05:49:20Z",
-    "new_count": 1,
-    "last_article_date": "2026-06-22",
-    "last_updated_run_utc": "2026-06-29T05:49:20Z"
+    "last_run_utc": "2026-07-06T05:10:01Z",
+    "new_count": 2,
+    "last_article_date": "2026-07-02",
+    "last_updated_run_utc": "2026-07-06T05:10:01Z"
   },
   "The Review of Economic Studies": {
     "source": "crossref",
-    "last_run_utc": "2026-06-29T05:49:20Z",
-    "new_count": 2,
+    "last_run_utc": "2026-07-06T05:10:01Z",
+    "new_count": 0,
     "last_article_date": "2026-06-26",
     "last_updated_run_utc": "2026-06-29T05:49:20Z"
   }
