@@ -2,6 +2,14 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-07-28
+
+### 修复 feedparser 无 timeout 导致 workflow 挂起
+
+7 月 27 日的定时简报因某个 RSS 服务器无响应而挂起约 78 分钟后失败。根本原因：`tracker_core.py` 和 `top5_tracker.py` 中的 `feedparser.parse()` 调用没有 timeout，若服务器接受 TCP 连接后停止发送数据，进程会无限等待至操作系统 TCP 超时。
+
+修复：在 `run_all_trackers.py` 入口处添加 `socket.setdefaulttimeout(30)`，使所有 socket 操作（包括 feedparser 内部的 urllib 调用）统一受 30 秒上限约束，与代码中其他 `urlopen(timeout=...)` 调用保持一致。
+
 ## 2026-06-09
 
 ### huang.py 新增 Journal of Economic Theory
