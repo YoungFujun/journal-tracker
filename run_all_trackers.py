@@ -1,6 +1,9 @@
 import os
+import socket
 
 import top5_tracker
+
+socket.setdefaulttimeout(30)
 
 
 def _env_flag(name: str, default: bool) -> bool:
