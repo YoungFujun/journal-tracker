@@ -54,6 +54,7 @@
   "10.1093/qje/qjag036",
   "10.1093/qje/qjag037",
   "10.1093/qje/qjag039",
+  "10.1093/qje/qjag040",
   "10.1093/qje/qjag041",
   "10.1093/restud/rdaf040",
   "10.1093/restud/rdaf042",
@@ -139,6 +140,7 @@
   "10.1093/restud/rdag068",
   "10.1093/restud/rdag070",
   "10.1093/restud/rdag071",
+  "10.1093/restud/rdag072",
   "10.1093/restud/rdag073",
   "10.1093/restud/rdag074",
   "10.1093/restud/rdag075",
@@ -148,6 +150,9 @@
   "10.1093/restud/rdag079",
   "10.1093/restud/rdag080",
   "10.1093/restud/rdag081",
+  "10.1093/restud/rdag084",
+  "10.1093/restud/rdag085",
+  "10.1093/restud/rdag087",
   "10.1257/aer.116.4.i",
   "10.1257/aer.116.5.i",
   "10.1257/aer.116.6.2282",
@@ -297,6 +302,9 @@
   "https://www.journals.uchicago.edu/doi/abs/10.1086/741685?af=R",
   "https://www.journals.uchicago.edu/doi/abs/10.1086/742102?af=R",
   "https://www.journals.uchicago.edu/doi/abs/10.1086/742103?af=R",
+  "https://www.journals.uchicago.edu/doi/abs/10.1086/742418?af=R",
+  "https://www.journals.uchicago.edu/doi/abs/10.1086/742420?af=R",
+  "https://www.journals.uchicago.edu/doi/abs/10.1086/742435?af=R",
   "https://www.nber.org/papers/w35078#fromrss",
   "https://www.nber.org/papers/w35080#fromrss",
   "https://www.nber.org/papers/w35084#fromrss",
@@ -459,5 +467,6 @@
   "https://www.sciencedirect.com/science/article/pii/S0094119026000604",
   "https://www.sciencedirect.com/science/article/pii/S0094119026000616",
   "https://www.sciencedirect.com/science/article/pii/S0094119026000628",
-  "https://www.sciencedirect.com/science/article/pii/S009411902600063X"
+  "https://www.sciencedirect.com/science/article/pii/S009411902600063X",
+  "https://www.sciencedirect.com/science/article/pii/S0094119026000677"
 ]
