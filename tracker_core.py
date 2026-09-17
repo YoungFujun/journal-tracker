@@ -25,6 +25,7 @@ from typing import Callable
 import top5_tracker
 
 STATE_DIR   = Path(__file__).resolve().parent / "state"
+DIGEST_DIR  = Path(__file__).resolve().parent / "digests"
 SMTP_HOST   = "smtp.163.com"
 SMTP_PORT   = 465
 FAIL_THRESHOLD = 5
@@ -505,6 +506,22 @@ def build_html(
 </body></html>"""
 
 
+# ── 保存 digest 副本（供外部按收件人分文件夹读取）──────────────────────────────
+
+def save_digest(cfg: TrackerConfig, html_body: str, subject: str) -> Path:
+    """把本周发出的 HTML digest 原样存一份到
+    digests/<script_name>/<年份>-Q<季度>/YYYY-MM-DD.html。
+    每个收件人各自文件夹，按季度再分层，避免单个文件夹堆积过多文件。"""
+    now = datetime.now(timezone.utc)
+    quarter = (now.month - 1) // 3 + 1
+    folder = DIGEST_DIR / cfg.script_name / f"{now.year}-Q{quarter}"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{now.strftime('%Y-%m-%d')}.html"
+    path.write_text(f"<!-- subject: {html.escape(subject)} -->\n{html_body}", encoding="utf-8")
+    print(f"Digest 副本已保存: {path}")
+    return path
+
+
 # ── 发送邮件 ───────────────────────────────────────────────────────────────────
 
 def send_email(cfg: TrackerConfig, html_body: str, subject: str):
@@ -671,5 +688,6 @@ def run_tracker(
         seen |= new_issue_seen
         save_seen(cfg, seen)
         save_issue_state(cfg, updated_issue_state)
+        save_digest(cfg, html_body, subject)
         send_email(cfg, html_body, subject)
         print("完成，缓存已更新。")
