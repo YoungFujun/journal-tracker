@@ -2,6 +2,14 @@
 
 本文件记录项目的主要维护变更。自动运行产生的缓存更新（`seen_*.json`、`fail_counts_*.json`）不单独列入。
 
+## 2026-10-06
+
+### 修复 10/5 定时简报因 SMTP 授权码失效而失败
+
+10 月 5 日的定时简报运行时，`tracker_core.py` 发信触发 `smtplib.SMTPAuthenticationError: (535, authentication failed)`，导致 `run_all_trackers.py` 未捕获异常直接崩溃，后续 commit/push 步骤被跳过。根本原因：163 邮箱的 SMTP 授权码（`EMAIL_PASSWORD`）失效。
+
+修复：重新生成授权码并更新 GitHub Secret，重跑失败的 workflow run 验证恢复正常。另将本地调试脚本目录 `tmp/` 加入 `.gitignore`（脚本用假凭据本地预览 HTML 输出，无需同步远端）。
+
 ## 2026-07-28
 
 ### 修复 feedparser 无 timeout 导致 workflow 挂起

@@ -6,3 +6,4 @@ NOTES.md
 .venv311/
 .DS_Store
 preview_*.html
+tmp/

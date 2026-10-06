@@ -44,6 +44,7 @@
 
 ## 更新记录
 
+- **2026-10-06**：修复 10/5 定时简报因 163 邮箱 SMTP 授权码失效导致 workflow 崩溃、commit/push 被跳过的问题；更新授权码并重跑验证恢复正常；`tmp/`（本地调试脚本目录）加入 `.gitignore`。
 - **2026-07-28**：修复 `feedparser.parse()` 无 timeout 导致 workflow 挂起的问题；在 `run_all_trackers.py` 入口添加 `socket.setdefaulttimeout(30)`，统一限制所有 socket 操作上限。
 - **2026-06-09**：`huang.py` 新增 Journal of Economic Theory（Elsevier ScienceDirect RSS），来源从 19 个扩展至 20 个。
 - **2026-06-03**：修复三处 bug：Top5 期刊抓取失败时不再向所有脚本重复触发告警邮件；`previously_sent` 检查改为预计算集合查询，消除误判风险；Top5 CrossRef 文章补全 `date_display` 字段，2 段日期正确显示为"June 2026"。`huang.py` 暂停追踪 7 个非经济学期刊，来源从 26 个收窄至 19 个。
